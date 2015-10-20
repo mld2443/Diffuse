@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		C912B06B1BD6AC9E00FB49FE /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C912B06A1BD6AC9E00FB49FE /* main.cpp */; };
+		C912B0741BD6B2E200FB49FE /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C912B0731BD6B2E200FB49FE /* GLUT.framework */; };
+		C912B0761BD6B2E700FB49FE /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C912B0751BD6B2E700FB49FE /* OpenGL.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +27,10 @@
 /* Begin PBXFileReference section */
 		C912B0671BD6AC9E00FB49FE /* Diffuse */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Diffuse; sourceTree = BUILT_PRODUCTS_DIR; };
 		C912B06A1BD6AC9E00FB49FE /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		C912B0711BD6ACCF00FB49FE /* point.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = point.h; sourceTree = "<group>"; };
+		C912B0721BD6AE3200FB49FE /* bitmap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitmap.h; sourceTree = "<group>"; };
+		C912B0731BD6B2E200FB49FE /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
+		C912B0751BD6B2E700FB49FE /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,6 +38,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C912B0761BD6B2E700FB49FE /* OpenGL.framework in Frameworks */,
+				C912B0741BD6B2E200FB49FE /* GLUT.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -41,6 +49,8 @@
 		C912B05E1BD6AC9E00FB49FE = {
 			isa = PBXGroup;
 			children = (
+				C912B0751BD6B2E700FB49FE /* OpenGL.framework */,
+				C912B0731BD6B2E200FB49FE /* GLUT.framework */,
 				C912B0691BD6AC9E00FB49FE /* Diffuse */,
 				C912B0681BD6AC9E00FB49FE /* Products */,
 			);
@@ -58,6 +68,8 @@
 			isa = PBXGroup;
 			children = (
 				C912B06A1BD6AC9E00FB49FE /* main.cpp */,
+				C912B0711BD6ACCF00FB49FE /* point.h */,
+				C912B0721BD6AE3200FB49FE /* bitmap.h */,
 			);
 			path = Diffuse;
 			sourceTree = "<group>";
