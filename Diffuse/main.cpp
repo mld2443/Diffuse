@@ -9,31 +9,20 @@
 
 #include "bitmap.h"
 #include "bezier.h"
+#include "colorpicker.h"
 
 #define WINDOW_SIZE 512
-
-int mouseX = -1, mouseY = -1;
-int diffuse_window, color_picker;
-int selected_color;
-bool mouseLeftDown = false, mouseRightDown = false, mouseMiddleDown = false;
-bool drawImage = false, clicked = false;
-
-list<point<float>> points;
-list<point<float>*> new_points;
-point<float> *selected, *coloring;
-
-list<bezier> curves;
 
 void display_1(void) {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     
-    if (!drawImage) {
-        for (auto &p : points)
-            p.draw(&p == selected);
-    }
-    
     for (auto &curve : curves)
         curve.draw(50);
+    
+    if (!drawImage) {
+        for (auto &p : points)
+            p.draw(&p == selected || &p == coloring);
+    }
     
     glFlush();
     
@@ -79,185 +68,65 @@ void init(void) {
     glLoadIdentity();
 }
 
-void display_2(void) {
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-    
-    glBegin(GL_QUADS); {
-        glColor3ub(0,0,0);
-        glVertex2i(10, 35);
-        glVertex2i(10, 20);
-        glColor3ub(255,0,0);
-        glVertex2i(266, 20);
-        glVertex2i(266, 35);
-        
-        glColor3ub(0,0,0);
-        glVertex2i(10, 80);
-        glVertex2i(10, 65);
-        glColor3ub(0,255,0);
-        glVertex2i(266, 65);
-        glVertex2i(266, 80);
-        
-        glColor3ub(0,0,0);
-        glVertex2i(10, 125);
-        glVertex2i(10, 110);
-        glColor3ub(0,0,255);
-        glVertex2i(266, 110);
-        glVertex2i(266, 125);
-        
-        glColor3ubv(coloring->lColor);
-        glVertex2i(10, 245);
-        glVertex2i(10, 145);
-        glVertex2i(138, 145);
-        glVertex2i(138, 245);
-        
-        glColor3ubv(coloring->rColor);
-        glVertex2i(138, 245);
-        glVertex2i(138, 145);
-        glVertex2i(266, 145);
-        glVertex2i(266, 245);
-    } glEnd();
-    
-    glBegin(GL_TRIANGLES); {
-        glColor3ub(255,255,255);
-        for (int i = 0; i < 3; i++) {
-            glVertex2i(coloring->lColor[i] + 6, i * 45 + 13);
-            glVertex2i(coloring->lColor[i] + 14, i * 45 + 13);
-            glVertex2i(coloring->lColor[i] + 10, i * 45 + 20);
-            
-            glVertex2i(coloring->rColor[i] + 10, i * 45 + 35);
-            glVertex2i(coloring->rColor[i] + 14, i * 45 + 42);
-            glVertex2i(coloring->rColor[i] + 6, i * 45 + 42);
-        }
-    } glEnd();
-    
-    glFlush();
-    glutSwapBuffers();
-}
-
-void mouse_2(int button, int state, int x, int y) {
-    switch(button)
-    {
-        case GLUT_LEFT_BUTTON:
-            mouseLeftDown = state == GLUT_DOWN;
-            if (mouseLeftDown) {
-                selected_color = 0;
-                if (y-13 < 8 && abs(x-coloring->lColor[0]) < 5)
-                    selected_color = 1;
-                else if (y-35 < 8 && abs(x-coloring->rColor[0]) < 5)
-                    selected_color = 2;
-                else if (y-58 < 8 && abs(x-coloring->lColor[1]) < 5)
-                    selected_color = 3;
-                else if (y-80 < 8 && abs(x-coloring->rColor[1]) < 5)
-                    selected_color = 4;
-                else if (y-103 < 8 && abs(x-coloring->lColor[2]) < 5)
-                    selected_color = 5;
-                else if (y-125 < 8 && abs(x-coloring->rColor[2]) < 5)
-                    selected_color = 6;
-            }
-            break;
-        case GLUT_MIDDLE_BUTTON:
-            mouseMiddleDown = state == GLUT_DOWN;
-            break;
-        case GLUT_RIGHT_BUTTON:
-            mouseRightDown = state == GLUT_DOWN;
-            break;
-    }
-    
-    mouseX = x;
-    mouseY = y;
-}
-
-void reshape_2(int w, int h) {
-    glViewport(0, 0, w, h);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluOrtho2D(0, glutGet(GLUT_WINDOW_WIDTH) - 1, glutGet(GLUT_WINDOW_HEIGHT) - 1, 0);
-    glMatrixMode(GL_MODELVIEW);
-}
-
-void key_2(unsigned char c, int x, int y) {
-    switch ( c )
-    {
-        case 13: //return
-            glutDestroyWindow(color_picker);
-            break;
-            
-        case 27: //escape
-            glutDestroyWindow(color_picker);
-            glutDestroyWindow(diffuse_window);
-            exit(0);
-            break;
-    }
-}
-
-void motion_2(int x, int y) {
-    mouseX = x;
-    mouseY = y;
-    
-    if (selected_color) {
-        switch (selected_color) {
-            case 1:
-                coloring->lColor[0] = (x < 265)? x-10 : 255;
-                break;
-            case 2:
-                coloring->lColor[0] = (x < 265)? x-10 : 255;
-                break;
-            case 3:
-                coloring->lColor[0] = (x < 265)? x-10 : 255;
-                break;
-            case 4:
-                coloring->lColor[0] = (x < 265)? x-10 : 255;
-                break;
-            case 5:
-                coloring->lColor[0] = (x < 265)? x-10 : 255;
-                break;
-            case 6:
-                coloring->lColor[0] = (x < 265)? x-10 : 255;
-                break;
-        }
-        glutPostRedisplay();
-    }
-}
-
 void mouse_1(int button, int state, int x, int y) {
-    selected = nullptr;
-    if (state == GLUT_DOWN)
-        for (auto &p : points)
-            if (p.clicked(x, y))
-                selected = &p;
-    
     switch(button)
     {
         case GLUT_LEFT_BUTTON:
             mouseLeftDown = state == GLUT_DOWN;
-            if (mouseLeftDown) {
-                if (!selected) {
-                    points.push_back(point<float>(x, y));
-                    new_points.push_back(&points.back());
+            
+            if (!drawImage){
+                if (mouseLeftDown) {
+                    selected = nullptr;
+                    for (auto &p : points)
+                        if (p.clicked(x, y))
+                            selected = &p;
+                    
+                    if (!selected) {
+                        points.push_back(point<float>(x, y));
+                        new_points.push_back(&points.back());
+                    }
+                }
+                else {
+                    selected = nullptr;
                 }
             }
             break;
-        case GLUT_MIDDLE_BUTTON:
-            mouseMiddleDown = state == GLUT_DOWN;
-            break;
         case GLUT_RIGHT_BUTTON:
             mouseRightDown = state == GLUT_DOWN;
-            if (selected) {
-                coloring = selected;
-                glutInitWindowSize(276, 276);
-                glutInitWindowPosition(650, 200);
-                color_picker = glutCreateWindow("Select Color");
-                glutReshapeFunc (reshape_2);
-                glutDisplayFunc(display_2);
-                glutMouseFunc(mouse_2);
-                glutMotionFunc(motion_2);
-                glutKeyboardFunc(key_2);
+            
+            if (!drawImage){
+                if (mouseRightDown) {
+                    selected = nullptr;
+                    for (auto &p : points)
+                        if (p.clicked(x, y))
+                            selected = &p;
+                    
+                    if (selected) {
+                        coloring = selected;
+                        selected = nullptr;
+                        
+                        if (color_picker) {
+                            glutDestroyWindow(color_picker);
+                            color_picker = 0;
+                        }
+                        
+                        glutInitWindowSize(276, 276);
+                        glutInitWindowPosition(650, 200);
+                        color_picker = glutCreateWindow("Select Color");
+                        glutReshapeFunc (reshape_2);
+                        glutDisplayFunc(display_2);
+                        glutMouseFunc(mouse_2);
+                        glutMotionFunc(motion_2);
+                        glutKeyboardFunc(key_2);
+                    }
+                }
             }
             break;
     }
     
     mouseX = x;
     mouseY = y;
+    glutSetWindow(diffuse_window);
     glutPostRedisplay();
 }
 

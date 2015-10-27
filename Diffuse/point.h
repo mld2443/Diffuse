@@ -133,17 +133,18 @@ public:
         y /= len;
     }
     
-    void draw(const bool outline) { // assumes n is at least 2!
-        if (outline) {
-            glBegin(GL_QUADS); {
-                glColor3ubv(rColor);
-                glVertex2f(x - 1 - POINTSIZE, y + 1 + POINTSIZE);
-                glVertex2f(x - 1 - POINTSIZE, y - 1 - POINTSIZE);
-                glColor3ubv(lColor);
-                glVertex2f(x + 1 + POINTSIZE, y - 1 - POINTSIZE);
-                glVertex2f(x + 1 + POINTSIZE, y + 1 + POINTSIZE);
-            } glEnd();
-        }
+    void draw(const bool selected) {
+        // outline
+        glBegin(GL_QUADS); {
+            if (selected)
+                glColor3ub(215,215,215);
+            else
+                glColor3ub(40,40,40);
+            glVertex2f(x - 1 - POINTSIZE, y + 1 + POINTSIZE);
+            glVertex2f(x - 1 - POINTSIZE, y - 1 - POINTSIZE);
+            glVertex2f(x + 1 + POINTSIZE, y - 1 - POINTSIZE);
+            glVertex2f(x + 1 + POINTSIZE, y + 1 + POINTSIZE);
+        } glEnd();
         
         glBegin(GL_QUADS); {
             glColor3ubv(lColor);
