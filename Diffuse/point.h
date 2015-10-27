@@ -2,120 +2,188 @@
 #define POINT_H
 
 #include <OpenGL/gl.h>
+#include <cmath>
 
-#define POINTSIZE 5
+#define POINTSIZE 3
 
-template <int n>
-class Point {
+template <class T>
+class point {
 public:
-    float data[n];
+    T x, y;
+    GLubyte lColor[3], rColor[3];
     
-    Point() {
-        memset(data, 0, sizeof(float)* n);
-    }
-    
-    Point(float * d) {
-        for(int i = 0; i < n; i++)
-            data[i] = d[i];
-    }
-    
-    Point* operator =(const Point& v)const {
-        for(int i = 0 ; i < n; i++)
-            data[i] = v.data[i];
-        return &this;
-    }
-    
-    Point operator +(const Point& v)const {
-        Point<n> rvalue;
-        for(int i = 0 ; i < n; i++)
-            rvalue.data[i] = data[i] + v.data[i];
+    point(const T _x=0.0, const T _y=0.0) {
+        x = _x;
+        y = _y;
         
+        for (int i = 0; i < 3; i++){
+            lColor[i] = 40;
+            rColor[i] = 200;
+        }
+    }
+    
+    point operator =(const point& v) {
+        x = v.x;
+        y = v.y;
+        
+        for (int i = 0; i < 3; i++){
+            lColor[i] = v.lColor[i];
+            rColor[i] = v.rColor[i];
+        }
+        return *this;
+    }
+    
+    point operator +(const point& v) const {
+        point rvalue(v.x + x, v.y + y);
+        
+        for (int i = 0; i < 3; i++){
+            rvalue.lColor[i] = lColor[i] + v.lColor[i];
+            rvalue.rColor[i] = rColor[i] + v.rColor[i];
+        }
         return rvalue;
     }
     
-    Point operator -(const Point& v)const {
-        Point<n> rvalue;
-        for(int i = 0 ; i < n; i++)
-            rvalue.data[i] = data[i] - v.data[i];
+    point operator -(const point& v) const {
+        point rvalue(v.x - x, v.y - y);
         
+        for (int i = 0; i < 3; i++){
+            rvalue.lColor[i] = lColor[i] - v.lColor[i];
+            rvalue.rColor[i] = rColor[i] - v.rColor[i];
+        }
         return rvalue;
     }
     
-    Point operator *(float s)const {
-        Point<n> rvalue;
-        for(int i = 0 ; i < n; i++)
-            rvalue.data[i] = data[i]* s;
+    point operator *(T s) const {
+        point rvalue(s * x, s * y);
         
+        for (int i = 0; i < 3; i++){
+            rvalue.lColor[i] = lColor[i] * s;
+            rvalue.rColor[i] = rColor[i] * s;
+        }
         return rvalue;
     }
     
-    Point operator /(float s)const {
-        Point<n> rvalue;
-        for(int i = 0 ; i < n; i++)
-            rvalue.data[i] = data[i]/ s;
+    point operator /(T s) const {
+        point rvalue(x / s, y / s);
         
+        for (int i = 0; i < 3; i++){
+            rvalue.lColor[i] = lColor[i] / s;
+            rvalue.rColor[i] = rColor[i] / s;
+        }
         return rvalue;
     }
     
-    void operator +=(const Point& v) {
-        for(int i = 0 ; i < n; i++)
-            data[i] += v.data[i];
-    }
-    
-    void operator -=(const Point& v) {
-        for(int i = 0 ; i < n; i++)
-            data[i] -= v.data[i];
-    }
-    
-    void operator *=(float s) {
-        for(int i = 0 ; i < n; i++)
-            data[i] *= s;
-    }
-    
-    void operator /=(float s) {
-        for(int i = 0 ; i < n; i++)
-            data[i] /= s;
-    }
-    
-    float dot(const Point &v)const {
-        float rvalue = 0;
-        for(int i = 0 ; i < n; i++)
-            rvalue += data[i] * v.data[i];
+    void operator +=(const point& v) {
+        x += v.x;
+        y += v.y;
         
-        return rvalue;
+        for (int i = 0; i < 3; i++){
+            lColor[i] += v.lColor[i];
+            rColor[i] += v.rColor[i];
+        }
     }
     
-    void zero(void) {
-        for(int i = 0; i < n; i++)
-            data[i] = 0;
+    void operator -=(const point& v) {
+        x -= v.x;
+        y -= v.y;
+        
+        for (int i = 0; i < 3; i++){
+            lColor[i] -= v.lColor[i];
+            rColor[i] -= v.rColor[i];
+        }
     }
     
-    void normalize(void) {
-        float len = 0;
-        int i;
+    void operator *=(const T s) {
+        x *= s;
+        y *= s;
         
-        for(i = 0; i < n; i++)
-            len += data[i] * data[i];
-        
-        len = sqrt(len);
-        
-        for(i = 0; i < n; i++)
-            data[i] /= len;
+        for (int i = 0; i < 3; i++){
+            lColor[i] *= s;
+            rColor[i] *= s;
+        }
     }
     
-    float &operator[](int i) {
-        return data[i];
+    void operator /=(const T s) {
+        x /= s;
+        y /= s;
+        
+        for (int i = 0; i < 3; i++){
+            lColor[i] /= s;
+            rColor[i] /= s;
+        }
     }
     
-    void draw(void) { // assumes n is at least 2!
-        float x = data[0], y = data[1];
+    T dot(const point &v)const {
+        return (v.x*x + v.y*y);
+    }
+    
+    void zero() {
+        x = 0.0;
+        y = 0.0;
         
-        glBegin(GL_QUADS);
-        glVertex2f(x - POINTSIZE / 2.0, y + POINTSIZE / 2.0); 
-        glVertex2f(x - POINTSIZE / 2.0, y - POINTSIZE / 2.0); 
-        glVertex2f(x + POINTSIZE / 2.0, y - POINTSIZE / 2.0); 
-        glVertex2f(x + POINTSIZE / 2.0, y + POINTSIZE / 2.0); 
-        glEnd();
+        for (int i = 0; i < 3; i++){
+            lColor[i] = 0;
+            rColor[i] = 0;
+        }
+    }
+    
+    void normalize() {
+        T len = sqrt(x*x + y*y);
+        x /= len;
+        y /= len;
+    }
+    
+    void draw(const bool outline) { // assumes n is at least 2!
+        if (outline) {
+            glBegin(GL_QUADS); {
+                glColor3ubv(rColor);
+                glVertex2f(x - 1 - POINTSIZE, y + 1 + POINTSIZE);
+                glVertex2f(x - 1 - POINTSIZE, y - 1 - POINTSIZE);
+                glColor3ubv(lColor);
+                glVertex2f(x + 1 + POINTSIZE, y - 1 - POINTSIZE);
+                glVertex2f(x + 1 + POINTSIZE, y + 1 + POINTSIZE);
+            } glEnd();
+        }
+        
+        glBegin(GL_QUADS); {
+            glColor3ubv(lColor);
+            glVertex2f(x - POINTSIZE, y + POINTSIZE);
+            glVertex2f(x - POINTSIZE, y - POINTSIZE); 
+            glColor3ubv(rColor);
+            glVertex2f(x + POINTSIZE, y - POINTSIZE);
+            glVertex2f(x + POINTSIZE, y + POINTSIZE);
+        } glEnd();
+    }
+    
+    void diff(const T dx, const T dy) {
+        x -= dx;
+        y -= dy;
+    }
+    
+    point leftside(const point &v) const {
+        point rvalue, tangent = v - *this;
+        rvalue.x = -tangent.y;
+        rvalue.y = tangent.x;
+        
+        rvalue.normalize();
+        rvalue *= 3;
+        
+        return rvalue + *this;
+    }
+    
+    point rightside(const point &v) const {
+        point rvalue, tangent = v - *this;
+        rvalue.x = tangent.y;
+        rvalue.y = -tangent.x;
+        
+        rvalue.normalize();
+        rvalue *= 3;
+        
+        return rvalue + *this;
+    }
+    
+    bool clicked(const T mx, const T my) const {
+        return (std::abs(x-mx) < (POINTSIZE*2) && std::abs(y-my) < (POINTSIZE*2));
     }
 };
 

@@ -1,10 +1,3 @@
-//
-//  bitmap.h
-//  Diffuse
-//
-//  Created by Matthew Dillard on 10/20/15.
-//
-
 #ifndef bitmap_h
 #define bitmap_h
 

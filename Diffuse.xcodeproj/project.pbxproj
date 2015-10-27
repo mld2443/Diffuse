@@ -31,6 +31,7 @@
 		C912B0721BD6AE3200FB49FE /* bitmap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitmap.h; sourceTree = "<group>"; };
 		C912B0731BD6B2E200FB49FE /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
 		C912B0751BD6B2E700FB49FE /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		C98BDDCD1BD994A80089035C /* bezier.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bezier.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,6 +71,7 @@
 				C912B06A1BD6AC9E00FB49FE /* main.cpp */,
 				C912B0711BD6ACCF00FB49FE /* point.h */,
 				C912B0721BD6AE3200FB49FE /* bitmap.h */,
+				C98BDDCD1BD994A80089035C /* bezier.h */,
 			);
 			path = Diffuse;
 			sourceTree = "<group>";
@@ -247,6 +249,7 @@
 				C912B0701BD6AC9E00FB49FE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
