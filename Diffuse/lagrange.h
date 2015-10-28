@@ -1,11 +1,11 @@
-#ifndef bezier_h
-#define bezier_h
+#ifndef lagrange_h
+#define lagrange_h
 
 #include "curve.h"
 
-class bezier : public curve {
+class lagrange : public curve {
 public:
-    bezier(const list<point<float>*>& cpts, const unsigned int f = 50.0) {
+    lagrange(const list<point<float>*>& cpts, const unsigned int f = 50.0) {
         c_points = vector<point<float>*>(cpts.begin(), cpts.end());
         degree = (unsigned int)c_points.size() - 1;
         fidelity = f;
@@ -18,9 +18,11 @@ public:
         if (c_points.size() < 2)
             return;
         
+        auto knots = generate_knots(c_points, degree, parameterization);
+        
         vector<point<float>> curve;
-        for (unsigned int t = 0; t <= fidelity; t++)
-            curve.push_back(decasteljau((float)t/(float)fidelity));
+        for (unsigned int t = 0; t <= (float)fidelity * knots[degree]; t++)
+            curve.push_back(neville(knots, (float)t/(float)fidelity));
         
         glBegin(GL_QUAD_STRIP); {
             auto i2 = curve.begin(), i1 = i2++;
@@ -52,38 +54,12 @@ public:
         
     }
     
-    list<point<float>*>* elevate_degree() {
-        auto *newpts = new list<point<float>*>();
-        
-        newpts->push_back(c_points.front());
-        for (int i = 1; i < c_points.size(); i++)
-            newpts->push_back(new point<float>(*c_points[i] * (1 - ((float)i / (float)(c_points.size()))) + *c_points[i - 1] * ((float)i / (float)(c_points.size()))));
-        newpts->push_back(c_points.back());
-        
-        c_points = vector<point<float>*>(newpts->begin(), newpts->end());
-        degree = (unsigned int)c_points.size() - 1;
-        return newpts;
-    }
-    
 private:
-    point<float> decasteljau(const unsigned int d, const unsigned int begin, const float t, map<pair<unsigned int,unsigned int>,point<float>>& hash) const {
-        if (d == 0)
-            return *(c_points[begin]);
-        
-        auto p = pair<unsigned int, unsigned int>(d, begin);
-        auto index = hash.find(p);
-        
-        if (index != hash.end())
-            return index->second;
-        
-        return hash[p] = (decasteljau(d - 1, begin, t, hash) * (1.0 - t)) + (decasteljau(d - 1, begin + 1, t, hash) * t);
-    }
-    
-    point<float> decasteljau(const float t) const {
+    point<float> neville(const vector<float>& knots, const float t) const {
         auto hash = map<pair<unsigned int, unsigned int>, point<float>>();
-        auto p = decasteljau((unsigned int)c_points.size()-1, 0, t, hash);
+        auto p = curve::neville(degree, 0, knots, t, hash);
         return p;
     }
 };
 
-#endif /* bezier_h */
+#endif /* lagrange_h */

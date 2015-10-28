@@ -4,13 +4,13 @@
 #include <OpenGL/gl.h>
 #include <cmath>
 
-#define POINTSIZE 3
+#define POINTSIZE 2
 
 template <class T>
 class point {
 public:
     T x, y;
-    GLubyte lColor[3], rColor[3];
+    int lColor[3], rColor[3];
     
     point(const T _x=0.0, const T _y=0.0) {
         x = _x;
@@ -127,6 +127,10 @@ public:
         }
     }
     
+    T abs() const {
+        return sqrt(x * x + y * y);
+    }
+    
     void normalize() {
         T len = sqrt(x*x + y*y);
         x /= len;
@@ -147,18 +151,13 @@ public:
         } glEnd();
         
         glBegin(GL_QUADS); {
-            glColor3ubv(lColor);
+            glColor3ub(lColor[0], lColor[1], lColor[2]);
             glVertex2f(x - POINTSIZE, y + POINTSIZE);
             glVertex2f(x - POINTSIZE, y - POINTSIZE); 
-            glColor3ubv(rColor);
+            glColor3ub(rColor[0], rColor[1], rColor[2]);
             glVertex2f(x + POINTSIZE, y - POINTSIZE);
             glVertex2f(x + POINTSIZE, y + POINTSIZE);
         } glEnd();
-    }
-    
-    void diff(const T dx, const T dy) {
-        x -= dx;
-        y -= dy;
     }
     
     point leftside(const point &v) const {

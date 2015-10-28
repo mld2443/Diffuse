@@ -2,26 +2,32 @@
 
 #include <GLUT/GLUT.h>
 #include <OpenGL/gl.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+#include <iostream>
+#include <fstream>
 #include <list>
 
 #include "bitmap.h"
+#include "lagrange.h"
 #include "bezier.h"
+#include "bspline.h"
+#include "catmullrom.h"
 #include "colorpicker.h"
 
 #define WINDOW_SIZE 512
+
+list<point<float>> points;
+list<point<float>*> new_points;
 
 void display_1(void) {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     
     for (auto &curve : curves)
-        curve.draw(50);
+        curve->draw(!drawImage);
     
     if (!drawImage) {
-        for (auto &p : points)
-            p.draw(&p == selected || &p == coloring);
+        for (auto &p : new_points)
+            p->draw(p == coloring);
     }
     
     glFlush();
@@ -76,19 +82,20 @@ void mouse_1(int button, int state, int x, int y) {
             
             if (!drawImage){
                 if (mouseLeftDown) {
-                    selected = nullptr;
+                    moving = nullptr;
                     for (auto &p : points)
                         if (p.clicked(x, y))
-                            selected = &p;
+                            moving = &p;
                     
-                    if (!selected) {
+                    if (!moving) {
                         points.push_back(point<float>(x, y));
                         new_points.push_back(&points.back());
                     }
                 }
                 else {
-                    selected = nullptr;
+                    moving = nullptr;
                 }
+                glutPostRedisplay();
             }
             break;
         case GLUT_RIGHT_BUTTON:
@@ -96,14 +103,14 @@ void mouse_1(int button, int state, int x, int y) {
             
             if (!drawImage){
                 if (mouseRightDown) {
-                    selected = nullptr;
+                    moving = nullptr;
                     for (auto &p : points)
                         if (p.clicked(x, y))
-                            selected = &p;
+                            moving = &p;
                     
-                    if (selected) {
-                        coloring = selected;
-                        selected = nullptr;
+                    if (moving) {
+                        coloring = moving;
+                        moving = nullptr;
                         
                         if (color_picker) {
                             glutDestroyWindow(color_picker);
@@ -113,12 +120,14 @@ void mouse_1(int button, int state, int x, int y) {
                         glutInitWindowSize(276, 276);
                         glutInitWindowPosition(650, 200);
                         color_picker = glutCreateWindow("Select Color");
-                        glutReshapeFunc (reshape_2);
-                        glutDisplayFunc(display_2);
-                        glutMouseFunc(mouse_2);
-                        glutMotionFunc(motion_2);
-                        glutKeyboardFunc(key_2);
+                        glutReshapeFunc (reshape_s);
+                        glutDisplayFunc(display_s);
+                        glutMouseFunc(mouse_s);
+                        glutMotionFunc(motion_s);
+                        glutKeyboardFunc(key_s);
                     }
+                    glutSetWindow(diffuse_window);
+                    glutPostRedisplay();
                 }
             }
             break;
@@ -126,8 +135,6 @@ void mouse_1(int button, int state, int x, int y) {
     
     mouseX = x;
     mouseY = y;
-    glutSetWindow(diffuse_window);
-    glutPostRedisplay();
 }
 
 void motion_1(int x, int y) {
@@ -137,9 +144,9 @@ void motion_1(int x, int y) {
     mouseX = x;
     mouseY = y;
     
-    if (selected) {
-        selected->x = x;
-        selected->y = y;
+    if (moving) {
+        moving->x = x;
+        moving->y = y;
         glutPostRedisplay();
     }
 }
@@ -152,6 +159,72 @@ void reshape_1(int w, int h) {
     glMatrixMode(GL_MODELVIEW);
 }
 
+/*void save_file() {
+    string filename;
+    printf("save file: ");
+    cin >> filename;
+    ofstream file;
+    file.open(filename);
+    file << curves.size() << endl;
+    for (auto &crv : curves) {
+        //file << crv->get_type() << endl;
+        file << crv->get_degree() << ' ' << crv->get_fidelity() << ' ' \
+        << crv->get_param() << ' ' << crv->get_c_points().size() << endl;
+        for (auto & pt : crv->get_c_points())
+            file << pt.x << ' ' << pt.y << endl;
+    }
+    file.close();
+}
+
+void load_file() {
+    string filename;
+    printf("load file: ");
+    cin >> filename;
+    ifstream file;
+    file.open(filename);
+    curves.clear();
+    unsigned int num_curves;
+    file >> num_curves;
+    for (unsigned int i = 0; i < num_curves; i++) {
+        int type;
+        file >> type;
+        
+        unsigned int degree, size;
+        float fidel, param;
+        file >> degree >> fidel >> param >> size;
+        
+        curve *crv;
+        switch (type) {
+            case curve::lagrange:
+                crv = new lagrange(degree, fidel, param);
+                break;
+            case curve::bezier:
+                crv = new bezier(degree, fidel, param);
+                break;
+            case curve::bspline:
+                crv = new bspline(degree, fidel, param);
+                break;
+            case curve::catmullrom:
+                crv = new catmullrom(degree, fidel, param);
+                break;
+                
+            default:
+                printf("file error: invalid type\n");
+                break;
+        }
+        
+        vector<Point> c_points;
+        for (int j = 0; j < size; j++) {
+            float x,y;
+            file >> x >> y;
+            c_points.push_back(Point(x, y));
+        }
+        crv->generate(c_points);
+        curves.push_back(crv);
+    }
+    file.close();
+}*/
+
 void key_1(unsigned char c, int x, int y) {
     switch ( c )
     {
@@ -159,11 +232,6 @@ void key_1(unsigned char c, int x, int y) {
             break;
             
         case 13: //return
-            if (new_points.size() > 1) {
-                curves.push_back(bezier(new_points));
-                new_points.clear();
-                glutPostRedisplay();
-            }
             break;
             
         case 8: //delete
@@ -178,6 +246,38 @@ void key_1(unsigned char c, int x, int y) {
         case ' ':
             drawImage = !drawImage;
             glutPostRedisplay();
+            break;
+            
+        case '1':
+            if (new_points.size() > 1) {
+                curves.push_back(new lagrange(new_points));
+                new_points.clear();
+                glutPostRedisplay();
+            }
+            break;
+            
+        case '2':
+            if (new_points.size() > 1) {
+                curves.push_back(new bezier(new_points));
+                new_points.clear();
+                glutPostRedisplay();
+            }
+            break;
+            
+        case '3':
+            if (new_points.size() > 1) {
+                curves.push_back(new bspline(new_points));
+                new_points.clear();
+                glutPostRedisplay();
+            }
+            break;
+            
+        case '4':
+            if (new_points.size() > 1) {
+                curves.push_back(new catmullrom(new_points));
+                new_points.clear();
+                glutPostRedisplay();
+            }
             break;
             
         case 27: //escape
