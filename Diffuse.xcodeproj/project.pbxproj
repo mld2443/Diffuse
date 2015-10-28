@@ -86,9 +86,9 @@
 			isa = PBXGroup;
 			children = (
 				C914D2041BE0131C00352D4B /* curve.h */,
+				C914D2061BE05D0500352D4B /* lagrange.h */,
 				C98BDDCD1BD994A80089035C /* bezier.h */,
 				C914D2051BE029F800352D4B /* bspline.h */,
-				C914D2061BE05D0500352D4B /* lagrange.h */,
 				C914D2081BE064F300352D4B /* catmullrom.h */,
 			);
 			name = curves;

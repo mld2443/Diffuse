@@ -2,6 +2,7 @@
 #define POINT_H
 
 #include <OpenGL/gl.h>
+#include <iostream>
 #include <cmath>
 
 #define POINTSIZE 2
@@ -137,13 +138,15 @@ public:
         y /= len;
     }
     
-    void draw(const bool selected) {
+    void draw(const int selected) const {
         // outline
         glBegin(GL_QUADS); {
-            if (selected)
-                glColor3ub(215,215,215);
+            if (selected > 1)
+                glColor3ub(235,60,60);
+            else if (selected == 1)
+                glColor3ub(235,235,235);
             else
-                glColor3ub(40,40,40);
+                glColor3ub(60,60,60);
             glVertex2f(x - 1 - POINTSIZE, y + 1 + POINTSIZE);
             glVertex2f(x - 1 - POINTSIZE, y - 1 - POINTSIZE);
             glVertex2f(x + 1 + POINTSIZE, y - 1 - POINTSIZE);
@@ -186,5 +189,17 @@ public:
         return (std::abs(x-mx) < (POINTSIZE*2) && std::abs(y-my) < (POINTSIZE*2));
     }
 };
+
+template <class T>
+std::ostream& operator <<(std::ostream& os, const point<T> p){
+    os << p.x << ' ' << p.y << ' ' << p.lColor[0] << ' ' << p.lColor[1] << ' ' << p.lColor[2] << ' ' << p.rColor[0] << ' ' << p.rColor[1] << ' ' << p.rColor[2];
+    return os;
+}
+
+template <class T>
+std::istream& operator >>(std::istream& is, point<T>& p){
+    is >> p.x >> p.y >> p.lColor[0] >> p.lColor[1] >> p.lColor[2] >> p.rColor[0] >> p.rColor[1] >> p.rColor[2];
+    return is;
+}
 
 #endif

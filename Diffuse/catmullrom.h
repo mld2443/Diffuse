@@ -6,80 +6,36 @@
 
 class catmullrom : public curve {
 public:
-    catmullrom(const list<point<float>*>& cpts, const unsigned int f = 50, const unsigned int d = 2) {
-        c_points = vector<point<float>*>(cpts.begin(), cpts.end());
+    catmullrom(const list<point<float>>& cpts, const ui d = 2, const float p = 0.0, const ui f = 50) {
+        c_points = vector<point<float>>(cpts.begin(), cpts.end());
         degree = d;
+        parameterization = p;
         fidelity = f;
-        set_uniform_param();
     }
     
-    /*vector<Point>& generate(const vector<Point>& control_points = vector<Point>()) {
-        if (control_points.size())
-            c_points = control_points;
-        curve.clear();
-        
-        auto knots = generate_ints(c_points, c_points.size() - 1, parameterization);
-        
-        float step = (knots[degree] / (float)degree) * fidelity;
-        int begin = 0;
-        for (unsigned int piece = degree - 1; piece < c_points.size() - degree; piece++) {
-            for (float t = knots[piece]; t <= knots[piece + 1]; t += step)
-                curve.push_back(cm_deboor(knots, begin, t));
-            begin++;
-        }
-        
-        return curve;
-    }*/
+    curvetype get_type() const { return curvetype::catmullrom; }
     
-    curvetype get_type() const { return curvetype::bezier; }
-    
-    void draw(const bool drawPoints) const {
+    void draw(const bool drawPoints, const bool selected, const point<float>* sp) const {
         if (c_points.size() < 2)
             return;
         
-        auto knots = generate_knots(c_points, (unsigned int)c_points.size() - 1, parameterization);
+        auto knots = generate_knots(c_points, (ui)c_points.size() - 1, parameterization);
         
-        vector<point<float>> curve;
+        vector<point<float>> crv;
         int begin = 0;
-        for (unsigned int piece = degree - 1; piece < c_points.size() - degree; piece++) {
-            for (unsigned int t = (knots[piece] * (float)fidelity); (float)t <= knots[piece + 1] * (float)fidelity; t++)
-                curve.push_back(deboor(knots, begin, (float)t/(float)fidelity));
+        for (ui piece = degree - 1; piece < c_points.size() - degree; piece++) {
+            for (ui t = (knots[piece] * (float)fidelity); (float)t < knots[piece + 1] * (float)fidelity; t++)
+                crv.push_back(deboor(knots, begin, (float)t/(float)fidelity));
             begin++;
         }
+        crv.push_back(c_points[begin+degree-1]);
         
-        glBegin(GL_QUAD_STRIP); {
-            auto i2 = curve.begin(), i1 = i2++;
-            while (i2 != curve.end()) {
-                auto left = i1->leftside(*i2);
-                auto right = i1->rightside(*i2);
-                
-                glColor3ub(i1->lColor[0], i1->lColor[1], i1->lColor[2]);
-                glVertex2f(left.x, left.y);
-                glColor3ub(i1->rColor[0], i1->rColor[1], i1->rColor[2]);
-                glVertex2f(right.x, right.y);
-                
-                i1++;
-                i2++;
-            }
-            auto right = i1->leftside(*(i1 - 1));
-            auto left = i1->rightside(*(i1 - 1));
-            
-            glColor3ub(i1->lColor[0], i1->lColor[1], i1->lColor[2]);
-            glVertex2f(left.x, left.y);
-            glColor3ub(i1->rColor[0], i1->rColor[1], i1->rColor[2]);
-            glVertex2f(right.x, right.y);
-            
-        } glEnd();
-        
-        if (drawPoints)
-            for (auto &p : c_points)
-                p->draw(0);
-        
+        curve::draw(crv, drawPoints, selected, sp);
     }
     
 private:
-    point<float> deboor(const unsigned int d, const unsigned int begin, const vector<float>& knots, const float t, map<pair<unsigned int,unsigned int>,point<float>>& hash) const {
-        auto p = pair<unsigned int, unsigned int>(d + degree, begin);
+    point<float> deboor(const ui d, const ui begin, const vector<float>& knots, const float t, map<pair<ui, ui>, point<float>>& hash) const {
+        auto p = pair<ui, ui>(d + degree, begin);
         auto ii = hash.find(p);
         
         if (ii != hash.end())
@@ -97,8 +53,8 @@ private:
          (knots[begin + degree] - knots[d + begin - 1]);
     }
     
-    point<float> deboor(const vector<float>& knots, const unsigned int piece, const float t) const {
-        auto hash = map<pair<unsigned int, unsigned int>, point<float>>();
+    point<float> deboor(const vector<float>& knots, const ui piece, const float t) const {
+        auto hash = map<pair<ui, ui>, point<float>>();
         auto p = deboor(degree, piece, knots, t, hash);
         return p;
     }
