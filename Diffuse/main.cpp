@@ -200,6 +200,11 @@ void save_file() {
     file << curves.size() << endl;
     for (auto &c : curves)
         file << *c;
+    
+    file << points.size() << endl;
+    for (auto &p : points)
+        file << p;
+    
     file.close();
 }
 
@@ -255,6 +260,14 @@ void load_file() {
         
         points.clear();
     }
+    int size;
+    file >> size;
+    for (int j = 0; j < size; j++) {
+        point<float> p;
+        file >> p;
+        points.push_back(p);
+    }
+    
     file.close();
 }
 
