@@ -28,7 +28,6 @@
 		C912B0671BD6AC9E00FB49FE /* Diffuse */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Diffuse; sourceTree = BUILT_PRODUCTS_DIR; };
 		C912B06A1BD6AC9E00FB49FE /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		C912B0711BD6ACCF00FB49FE /* point.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = point.h; sourceTree = "<group>"; };
-		C912B0721BD6AE3200FB49FE /* bitmap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitmap.h; sourceTree = "<group>"; };
 		C912B0731BD6B2E200FB49FE /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
 		C912B0751BD6B2E700FB49FE /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		C914D2031BE0052100352D4B /* colorpicker.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = colorpicker.h; sourceTree = "<group>"; };
@@ -36,6 +35,7 @@
 		C914D2051BE029F800352D4B /* bspline.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bspline.h; sourceTree = "<group>"; };
 		C914D2061BE05D0500352D4B /* lagrange.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lagrange.h; sourceTree = "<group>"; };
 		C914D2081BE064F300352D4B /* catmullrom.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = catmullrom.h; sourceTree = "<group>"; };
+		C914D2091BE160DC00352D4B /* diffuse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = diffuse.h; sourceTree = "<group>"; };
 		C98BDDCD1BD994A80089035C /* bezier.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bezier.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -73,8 +73,8 @@
 		C912B0691BD6AC9E00FB49FE /* Diffuse */ = {
 			isa = PBXGroup;
 			children = (
-				C912B0721BD6AE3200FB49FE /* bitmap.h */,
 				C914D2031BE0052100352D4B /* colorpicker.h */,
+				C914D2091BE160DC00352D4B /* diffuse.h */,
 				C912B06A1BD6AC9E00FB49FE /* main.cpp */,
 				C912B0711BD6ACCF00FB49FE /* point.h */,
 				C914D2071BE05E0300352D4B /* curves */,

@@ -5,7 +5,7 @@
 #include <iostream>
 #include <cmath>
 
-#define POINTSIZE 2
+#define POINTSIZE 3
 
 template <class T>
 class point {

@@ -5,15 +5,14 @@
 #include <fstream>
 #include <list>
 
-//#include "bitmap.h"
 #include "lagrange.h"
 #include "bezier.h"
 #include "bspline.h"
 #include "catmullrom.h"
 #include "colorpicker.h"
+#include "diffuse.h"
 
-#define WINDOW_WIDTH 512
-#define WINDOW_HEIGHT 512
+#define WINDOW_SIZE 512
 #define WINDOW_OFFX 100
 #define WINDOW_OFFY 100
 
@@ -34,8 +33,8 @@ void display() {
     
     if (drawImage) {
         // an example of how to read the frame buffer with the curves you just drew
-        float *pixels = new float[WINDOW_WIDTH * WINDOW_HEIGHT * 3];
-        glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGB, GL_FLOAT, pixels);
+        GLubyte *pixels = new GLubyte[WINDOW_SIZE * WINDOW_SIZE * 3];
+        glReadPixels(0, 0, WINDOW_SIZE, WINDOW_SIZE, GL_RGB, GL_UNSIGNED_BYTE, pixels);
         
         // an example of how to write an image to a file for debugging purposes
         //char name [ 256 ];
@@ -45,6 +44,7 @@ void display() {
         // DOWNSAMPLE
         // for all pixels that are black in the lower resolution image, create a downsampled image averaging the pixels from the higher resolution image that are not black
         
+        pixels = diffuse(WINDOW_SIZE, pixels, 3);
         
         // AVERAGE
         // for each level starting at the bottom
@@ -53,7 +53,7 @@ void display() {
         //			replace each unconstrained pixel with the average of its neighbors
         
         // draw the final, high resolution image to the screen
-        glDrawPixels(WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGB, GL_FLOAT, pixels);
+        glDrawPixels(WINDOW_SIZE, WINDOW_SIZE, GL_RGB, GL_UNSIGNED_BYTE, pixels);
         glFlush();
         delete[] pixels;
     }
@@ -124,7 +124,7 @@ void mouse(int button, int state, int x, int y) {
                     
                     if (coloring) {
                         glutInitWindowSize(276, 276);
-                        glutInitWindowPosition(WINDOW_OFFX + WINDOW_WIDTH + 10, WINDOW_OFFY + 50);
+                        glutInitWindowPosition(WINDOW_OFFX + WINDOW_SIZE + 10, WINDOW_OFFY + 50);
                         color_picker = glutCreateWindow("Select Color");
                         glutDisplayFunc(display_small);
                         glutMouseFunc(mouse_small);
@@ -148,7 +148,7 @@ void mouse(int button, int state, int x, int y) {
                             }
                             
                             glutInitWindowSize(321, 5 + BCOLOR_BUFFER + 85 * (int)selected->get_cpts().size());
-                            glutInitWindowPosition(WINDOW_OFFX + WINDOW_WIDTH + 10, WINDOW_OFFY);
+                            glutInitWindowPosition(WINDOW_OFFX + WINDOW_SIZE + 10, WINDOW_OFFY);
                             color_picker = glutCreateWindow("Select Colors");
                             glutDisplayFunc(display_big);
                             glutMouseFunc(mouse_big);
@@ -211,11 +211,11 @@ void save_file() {
 void load_file() {
     close_color_window(coloring);
     
-    string filename;
+/*    string filename;
     printf("load file: ");
-    cin >> filename;
+    cin >> filename;*/
     ifstream file;
-    file.open(filename);
+    file.open("demo1.txt");
     curves.clear();
     points.clear();
     
@@ -311,7 +311,7 @@ void key(unsigned char c, int x, int y) {
             glutPostRedisplay();
             break;
             
-        case 's':
+        { case 's':
             if (curves.size())
                 save_file();
             break;
@@ -319,7 +319,7 @@ void key(unsigned char c, int x, int y) {
         case 'l':
             load_file();
             glutPostRedisplay();
-            break;
+            break; }
             
         { case '1':
             if (points.size() > 1) {
@@ -370,7 +370,7 @@ void key(unsigned char c, int x, int y) {
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB);
-    glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+    glutInitWindowSize(WINDOW_SIZE, WINDOW_SIZE);
     glutInitWindowPosition(WINDOW_OFFX, WINDOW_OFFY);
     diffuse_window = glutCreateWindow("CPSC 645 HW2 - Matthew Dillard");
     init();

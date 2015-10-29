@@ -87,7 +87,7 @@ protected:
             
         } glEnd();
         
-        if (true)
+        if (drawPoints)
             for (auto &p : c_points)
                 p.draw(selected * ((&p == sp) + 1));
     }

@@ -372,6 +372,7 @@ void key_cp(unsigned char c, int x, int y) {
     {
         case 13: //return
             coloring = nullptr;
+            selected = nullptr;
             glutDestroyWindow(color_picker);
             color_picker = 0;
             glutSetWindow(diffuse_window);
