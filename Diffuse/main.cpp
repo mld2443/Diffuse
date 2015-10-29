@@ -32,27 +32,11 @@ void display() {
     glFlush();
     
     if (drawImage) {
-        // an example of how to read the frame buffer with the curves you just drew
         GLubyte *pixels = new GLubyte[WINDOW_SIZE * WINDOW_SIZE * 3];
         glReadPixels(0, 0, WINDOW_SIZE, WINDOW_SIZE, GL_RGB, GL_UNSIGNED_BYTE, pixels);
         
-        // an example of how to write an image to a file for debugging purposes
-        //char name [ 256 ];
-        //sprintf ( name, "screen.bmp" );
-        //saveBMP ( name, pixels, WINDOW_SIZE, WINDOW_SIZE );
+        pixels = diffuse(WINDOW_SIZE, pixels);
         
-        // DOWNSAMPLE
-        // for all pixels that are black in the lower resolution image, create a downsampled image averaging the pixels from the higher resolution image that are not black
-        
-        pixels = diffuse(WINDOW_SIZE, pixels, 3);
-        
-        // AVERAGE
-        // for each level starting at the bottom
-        //		for each pixel that is not constrained, overwrite its color with the color from the previous level
-        //		for some fixed number of iterations, (I used 100)
-        //			replace each unconstrained pixel with the average of its neighbors
-        
-        // draw the final, high resolution image to the screen
         glDrawPixels(WINDOW_SIZE, WINDOW_SIZE, GL_RGB, GL_UNSIGNED_BYTE, pixels);
         glFlush();
         delete[] pixels;
@@ -211,9 +195,9 @@ void save_file() {
 void load_file() {
     close_color_window(coloring);
     
-/*    string filename;
+    string filename;
     printf("load file: ");
-    cin >> filename;*/
+    cin >> filename;
     ifstream file;
     file.open("demo1.txt");
     curves.clear();
@@ -312,17 +296,19 @@ void key(unsigned char c, int x, int y) {
             break;
             
         { case 's':
-            if (curves.size())
+            if (!drawImage && curves.size())
                 save_file();
             break;
             
         case 'l':
-            load_file();
-            glutPostRedisplay();
+            if (!drawImage) {
+                load_file();
+                glutPostRedisplay();
+            }
             break; }
             
         { case '1':
-            if (points.size() > 1) {
+            if (!drawImage && points.size() > 1) {
                 close_color_window(coloring);
                 curves.push_back(new lagrange(points));
                 points.clear();
@@ -331,7 +317,7 @@ void key(unsigned char c, int x, int y) {
             break;
             
         case '2':
-            if (points.size() > 1) {
+            if (!drawImage && points.size() > 1) {
                 close_color_window(coloring);
                 curves.push_back(new bezier(points));
                 points.clear();
@@ -340,7 +326,7 @@ void key(unsigned char c, int x, int y) {
             break;
             
         case '3':
-            if (points.size() > 1) {
+            if (!drawImage && points.size() > 1) {
                 close_color_window(coloring);
                 curves.push_back(new bspline(points));
                 points.clear();
@@ -349,7 +335,7 @@ void key(unsigned char c, int x, int y) {
             break;
             
         case '4':
-            if (points.size() > 1) {
+            if (!drawImage && points.size() > 1) {
                 close_color_window(coloring);
                 curves.push_back(new catmullrom(points));
                 points.clear();
