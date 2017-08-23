@@ -16,6 +16,7 @@
 #define WINDOW_OFFX 100
 #define WINDOW_OFFY 100
 
+int smoothness = 25, iter = 512;
 list<point<float>> points;
 
 void display() {
@@ -35,7 +36,7 @@ void display() {
         GLubyte *pixels = new GLubyte[WINDOW_SIZE * WINDOW_SIZE * 3];
         glReadPixels(0, 0, WINDOW_SIZE, WINDOW_SIZE, GL_RGB, GL_UNSIGNED_BYTE, pixels);
         
-        pixels = diffuse(WINDOW_SIZE, pixels);
+        pixels = diffuse(WINDOW_SIZE, pixels, smoothness, iter);
         
         glDrawPixels(WINDOW_SIZE, WINDOW_SIZE, GL_RGB, GL_UNSIGNED_BYTE, pixels);
         glFlush();
@@ -97,6 +98,7 @@ void mouse(int button, int state, int x, int y) {
             if (!drawImage){
                 if (mouseRightDown) {
                     coloring = nullptr;
+                    selected = nullptr;
                     if (color_picker) {
                         glutDestroyWindow(color_picker);
                         color_picker = 0;
@@ -199,7 +201,7 @@ void load_file() {
     printf("load file: ");
     cin >> filename;
     ifstream file;
-    file.open("demo1.txt");
+    file.open(filename);
     curves.clear();
     points.clear();
     
@@ -293,6 +295,34 @@ void key(unsigned char c, int x, int y) {
         case ' ':
             drawImage = !drawImage;
             glutPostRedisplay();
+            break;
+            
+        case '-':
+            if (drawImage && smoothness > 25) {
+                smoothness -= 25;
+                glutPostRedisplay();
+            }
+            break;
+            
+        case '=':
+            if (drawImage && smoothness < 100) {
+                smoothness += 25;
+                glutPostRedisplay();
+            }
+            break;
+            
+        case '_':
+            if (drawImage && iter > 4) {
+                iter /= 2;
+                glutPostRedisplay();
+            }
+            break;
+            
+        case '+':
+            if (drawImage && iter < 512) {
+                iter *= 2;
+                glutPostRedisplay();
+            }
             break;
             
         { case 's':

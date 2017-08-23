@@ -84,7 +84,7 @@ void display_big() {
     print(110, 18, GLUT_BITMAP_HELVETICA_10, "ELEVATE DEGREE");
     
     glColor3ubv(param);
-    print(230, 18, GLUT_BITMAP_HELVETICA_10, "PARAM:"+to_string(selected->get_param()).substr(0,3));
+    print(2d30, 18, GLUadT_BITMAP_HELVETICA_10, "PARAM:"+to_string(selected->get_param()).substr(0,3));
     glBegin(GL_LINES); {
         glVertex2i(295, 6);
         glVertex2i(295, 15);

@@ -29,9 +29,9 @@ void setpixel(GLubyte *pixels, const ul size, const ul x, const ul y, const ul c
 }
 
 GLubyte neighbors(const GLubyte *pixels, const ul size, const ul x, const ul y, const ui c) {
-    ui total = 0, rvalue;
+    ui total = 0, rvalue = 0;
     if(x > 0){
-        rvalue = getpixel(pixels, size, x-1, y, c);
+        rvalue += getpixel(pixels, size, x-1, y, c);
         total++;
     }
     if(x < size - 1){
@@ -130,7 +130,7 @@ GLubyte* upscale(ui size, GLubyte *lowres, GLubyte *highres, const ul smooth, co
     
     delete [] lowres;
     
-    if (size <= limit)
+    if (false)
         for (ul step = 0; step < smooth; step++)
             for (ul x = 0; x < size; x++)
                 for (ul y = 0; y < size; y++)
