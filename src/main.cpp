@@ -1,7 +1,5 @@
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-#include <GLUT/GLUT.h>
-#include <OpenGL/gl.h>
+#include <GL/freeglut.h>
+#include <GL/gl.h>
 #include <fstream>
 #include <list>
 
@@ -21,28 +19,28 @@ list<point<float>> points;
 
 void display() {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-    
+
     for (auto &curve : curves)
         curve->draw(!drawImage, curve == selected, coloring);
-    
+
     if (!drawImage) {
         for (auto &p : points)
             p.draw((&p == moving) + (&p == coloring) * 2);
     }
-    
+
     glFlush();
-    
+
     if (drawImage) {
         GLubyte *pixels = new GLubyte[WINDOW_SIZE * WINDOW_SIZE * 3];
         glReadPixels(0, 0, WINDOW_SIZE, WINDOW_SIZE, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-        
+
         pixels = diffuse(WINDOW_SIZE, pixels, smoothness, iter);
-        
+
         glDrawPixels(WINDOW_SIZE, WINDOW_SIZE, GL_RGB, GL_UNSIGNED_BYTE, pixels);
         glFlush();
         delete[] pixels;
     }
-    
+
     glutSwapBuffers();
 }
 
@@ -72,7 +70,7 @@ void mouse(int button, int state, int x, int y) {
     {
         case GLUT_LEFT_BUTTON:
             mouseLeftDown = state == GLUT_DOWN;
-            
+
             if (!drawImage){
                 if (mouseLeftDown) {
                     moving = nullptr;
@@ -84,7 +82,7 @@ void mouse(int button, int state, int x, int y) {
                             for (auto &p : crv->get_cpts())
                                 if (p.clicked(x, y))
                                     moving = &p;
-                    
+
                     if (!moving) {
                         points.push_back(point<float>(x, y));
                     }
@@ -94,7 +92,7 @@ void mouse(int button, int state, int x, int y) {
             break;
         case GLUT_RIGHT_BUTTON:
             mouseRightDown = state == GLUT_DOWN;
-            
+
             if (!drawImage){
                 if (mouseRightDown) {
                     coloring = nullptr;
@@ -103,11 +101,11 @@ void mouse(int button, int state, int x, int y) {
                         glutDestroyWindow(color_picker);
                         color_picker = 0;
                     }
-                    
+
                     for (auto &p : points)
                         if (p.clicked(x, y))
                             coloring = &p;
-                    
+
                     if (coloring) {
                         glutInitWindowSize(276, 276);
                         glutInitWindowPosition(WINDOW_OFFX + WINDOW_SIZE + 10, WINDOW_OFFY + 50);
@@ -126,13 +124,13 @@ void mouse(int button, int state, int x, int y) {
                                     coloring = &p;
                                     selected = crv;
                                 }
-                        
+
                         if (selected) {
                             if (color_picker) {
                                 glutDestroyWindow(color_picker);
                                 color_picker = 0;
                             }
-                            
+
                             glutInitWindowSize(321, 5 + BCOLOR_BUFFER + 85 * (int)selected->get_cpts().size());
                             glutInitWindowPosition(WINDOW_OFFX + WINDOW_SIZE + 10, WINDOW_OFFY);
                             color_picker = glutCreateWindow("Select Colors");
@@ -150,7 +148,7 @@ void mouse(int button, int state, int x, int y) {
             }
             break;
     }
-    
+
     mouseX = x;
     mouseY = y;
 }
@@ -158,7 +156,7 @@ void mouse(int button, int state, int x, int y) {
 void motion(int x, int y) {
     mouseX = x;
     mouseY = y;
-    
+
     if (mouseLeftDown && moving) {
         moving->x = x;
         moving->y = y;
@@ -176,27 +174,27 @@ void reshape(int w, int h) {
 
 void save_file() {
     close_color_window(coloring);
-    
+
     string filename;
     printf("save file: ");
     cin >> filename;
     ofstream file;
     file.open(filename);
-    
+
     file << curves.size() << endl;
     for (auto &c : curves)
         file << *c;
-    
+
     file << points.size() << endl;
     for (auto &p : points)
         file << p;
-    
+
     file.close();
 }
 
 void load_file() {
     close_color_window(coloring);
-    
+
     string filename;
     printf("load file: ");
     cin >> filename;
@@ -204,24 +202,24 @@ void load_file() {
     file.open(filename);
     curves.clear();
     points.clear();
-    
+
     unsigned int num_curves;
     file >> num_curves;
-    
+
     for (unsigned int i = 0; i < num_curves; i++) {
         int type;
         file >> type;
-        
+
         unsigned int degree, fidel, size;
         float param;
         file >> degree >> param >> fidel >> size;
-        
+
         for (int j = 0; j < size; j++) {
             point<float> p;
             file >> p;
             points.push_back(p);
         }
-        
+
         curve *crv = nullptr;
         switch (type) {
             case curve::lagrange:
@@ -236,14 +234,14 @@ void load_file() {
             case curve::catmullrom:
                 crv = new catmullrom(points, degree, param, fidel);
                 break;
-                
+
             default:
                 printf("file error: invalid type\n");
                 break;
         }
         if (crv)
             curves.push_back(crv);
-        
+
         points.clear();
     }
     int size;
@@ -253,7 +251,7 @@ void load_file() {
         file >> p;
         points.push_back(p);
     }
-    
+
     file.close();
 }
 
@@ -262,14 +260,14 @@ void key(unsigned char c, int x, int y) {
     {
         case 9: //tab
             break;
-            
+
         case 13: //return
             break;
-            
+
         case 8: //delete
             if (!drawImage && selected) {
                 close_color_window(coloring);
-                
+
                 auto it = curves.begin();
                 for (; *it != selected && it != curves.end(); it++);
                 curves.erase(it);
@@ -279,11 +277,11 @@ void key(unsigned char c, int x, int y) {
                 glutPostRedisplay();
             }
             break;
-            
+
         case 127: //backspace
             if (!drawImage && moving){
                 close_color_window(moving == coloring);
-                
+
                 auto it = points.begin();
                 for (; &(*it) != moving && it != points.end(); it++);
                 points.erase(it);
@@ -291,52 +289,52 @@ void key(unsigned char c, int x, int y) {
                 glutPostRedisplay();
             }
             break;
-            
+
         case ' ':
             drawImage = !drawImage;
             glutPostRedisplay();
             break;
-            
+
         case '-':
             if (drawImage && smoothness > 25) {
                 smoothness -= 25;
                 glutPostRedisplay();
             }
             break;
-            
+
         case '=':
             if (drawImage && smoothness < 100) {
                 smoothness += 25;
                 glutPostRedisplay();
             }
             break;
-            
+
         case '_':
             if (drawImage && iter > 4) {
                 iter /= 2;
                 glutPostRedisplay();
             }
             break;
-            
+
         case '+':
             if (drawImage && iter < 512) {
                 iter *= 2;
                 glutPostRedisplay();
             }
             break;
-            
+
         { case 's':
             if (!drawImage && curves.size())
                 save_file();
             break;
-            
+
         case 'l':
             if (!drawImage) {
                 load_file();
                 glutPostRedisplay();
             }
             break; }
-            
+
         { case '1':
             if (!drawImage && points.size() > 1) {
                 close_color_window(coloring);
@@ -345,7 +343,7 @@ void key(unsigned char c, int x, int y) {
                 glutPostRedisplay();
             }
             break;
-            
+
         case '2':
             if (!drawImage && points.size() > 1) {
                 close_color_window(coloring);
@@ -354,7 +352,7 @@ void key(unsigned char c, int x, int y) {
                 glutPostRedisplay();
             }
             break;
-            
+
         case '3':
             if (!drawImage && points.size() > 1) {
                 close_color_window(coloring);
@@ -363,7 +361,7 @@ void key(unsigned char c, int x, int y) {
                 glutPostRedisplay();
             }
             break;
-            
+
         case '4':
             if (!drawImage && points.size() > 1) {
                 close_color_window(coloring);
@@ -372,12 +370,12 @@ void key(unsigned char c, int x, int y) {
                 glutPostRedisplay();
             }
             break; }
-            
+
         case 27: //escape
             glutDestroyWindow(diffuse_window);
             exit(0);
             break;
-            
+
         default:
             break;
     }
@@ -388,7 +386,7 @@ int main(int argc, char** argv) {
     glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB);
     glutInitWindowSize(WINDOW_SIZE, WINDOW_SIZE);
     glutInitWindowPosition(WINDOW_OFFX, WINDOW_OFFY);
-    diffuse_window = glutCreateWindow("CPSC 645 HW2 - Matthew Dillard");
+    diffuse_window = glutCreateWindow("Diffusion Curves");
     init();
     glutReshapeFunc (reshape);
     glutDisplayFunc(display);

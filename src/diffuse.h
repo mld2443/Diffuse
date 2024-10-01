@@ -1,13 +1,4 @@
-//
-//  diffuse.h
-//  Diffuse
-//
-//  Created by Matthew Dillard on 10/28/15.
-//  Copyright © 2015 Matthew Dillard. All rights reserved.
-//
-
-#ifndef diffuse_h
-#define diffuse_h
+#pragma once
 
 typedef unsigned long ul;
 GLubyte getpixel(const GLubyte *pixels, const ul size, const ul x, const ul y, const ui c) {
@@ -149,5 +140,3 @@ GLubyte* diffuse(const ui size, GLubyte *pixels, const ul smooth = 100, const ui
     
     return upscale(size, diffuse(size/2, downsample(size, pixels), smooth, limit), pixels, smooth, limit);
 }
-
-#endif /* diffuse_h */

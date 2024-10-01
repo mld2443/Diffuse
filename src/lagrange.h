@@ -1,6 +1,4 @@
-#ifndef lagrange_h
-#define lagrange_h
-
+#pragma once
 #include "curve.h"
 
 class lagrange : public curve {
@@ -11,22 +9,22 @@ public:
         parameterization = p;
         fidelity = f;
     }
-    
+
     curvetype get_type() const { return curvetype::lagrange; }
-    
+
     void draw(const bool drawPoints, const bool selected, const point<float>* sp) const {
         if (c_points.size() < 2)
             return;
-        
+
         auto knots = generate_knots(c_points, degree, parameterization);
-        
+
         vector<point<float>> curve;
         for (ui t = 0; t <= (float)fidelity * knots[degree]; t++)
             curve.push_back(neville(knots, (float)t/(float)fidelity));
-        
+
         curve::draw(curve, drawPoints, selected, sp);
     }
-    
+
 private:
     point<float> neville(const vector<float>& knots, const float t) const {
         auto hash = map<pair<ui, ui>, point<float>>();
@@ -34,5 +32,3 @@ private:
         return p;
     }
 };
-
-#endif /* lagrange_h */

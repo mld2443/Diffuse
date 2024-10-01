@@ -1,12 +1,4 @@
-//
-//  colorpicker.h
-//  Diffuse
-//
-//  Created by Matthew Dillard on 10/27/15.
-//
-
-#ifndef colorpicker_h
-#define colorpicker_h
+#pragma once
 
 #define BCOLOR_BUFFER 30
 
@@ -34,7 +26,7 @@ void print(const int x, const int y, void* font, const string s){
 
 void display_big() {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-    
+
     GLubyte *degree, *elev, *param;
     switch (selected->get_type()) {
         case curve::lagrange:
@@ -42,32 +34,32 @@ void display_big() {
             elev = invalid;
             param = valid;
             break;
-            
+
         case curve::bezier:
             degree = invalid;
             elev = valid;
             param = invalid;
             break;
-            
+
         case curve::bspline:
             degree = valid;
             elev = invalid;
             param = invalid;
             break;
-            
+
         case curve::catmullrom:
             degree = valid;
             elev = invalid;
             param = valid;
             break;
-            
+
         default:
             degree = invalid;
             elev = invalid;
             param = invalid;
             break;
     }
-    
+
     glColor3ubv(degree);
     print(10,18,GLUT_BITMAP_HELVETICA_10,"DEGREE:"+to_string(selected->get_degree()));
     glBegin(GL_LINES); {
@@ -79,22 +71,22 @@ void display_big() {
         glVertex2i(70, 21);
         glVertex2i(79, 21);
     } glEnd();
-    
+
     glColor3ubv(elev);
     print(110, 18, GLUT_BITMAP_HELVETICA_10, "ELEVATE DEGREE");
-    
+
     glColor3ubv(param);
-    print(2d30, 18, GLUadT_BITMAP_HELVETICA_10, "PARAM:"+to_string(selected->get_param()).substr(0,3));
+    print(230, 18, GLUT_BITMAP_HELVETICA_10, "PARAM:"+to_string(selected->get_param()).substr(0,3));
     glBegin(GL_LINES); {
         glVertex2i(295, 6);
         glVertex2i(295, 15);
         glVertex2i(290, 10);
         glVertex2i(299, 10);
-        
+
         glVertex2i(290, 21);
         glVertex2i(299, 21);
     } glEnd();
-    
+
     glPushMatrix(); {
         glTranslatef(0, BCOLOR_BUFFER, 0);
         for (auto &p : selected->get_cpts()) {
@@ -105,41 +97,41 @@ void display_big() {
                 glColor3ub(255,0,0);
                 glVertex2i(266, 10);
                 glVertex2i(266, 20);
-                
+
                 glColor3ub(0,0,0);
                 glVertex2i(10, 45);
                 glVertex2i(10, 35);
                 glColor3ub(0,255,0);
                 glVertex2i(266, 35);
                 glVertex2i(266, 45);
-                
+
                 glColor3ub(0,0,0);
                 glVertex2i(10, 70);
                 glVertex2i(10, 60);
                 glColor3ub(0,0,255);
                 glVertex2i(266, 60);
                 glVertex2i(266, 70);
-                
+
                 glColor3ub(p.lColor[0], p.lColor[1], p.lColor[2]);
                 glVertex2i(276, 40);
                 glVertex2i(276, 5);
                 glVertex2i(311, 5);
                 glVertex2i(311, 40);
-                
+
                 glColor3ub(p.rColor[0], p.rColor[1], p.rColor[2]);
                 glVertex2i(276, 75);
                 glVertex2i(276, 40);
                 glVertex2i(311, 40);
                 glVertex2i(311, 75);
             } glEnd();
-            
+
             glBegin(GL_TRIANGLES); {
                 glColor3ub(255,255,255);
                 for (int i = 0; i < 3; i++) {
                     glVertex2i(p.lColor[i] + 6, i * 25 + 3);
                     glVertex2i(p.lColor[i] + 14, i * 25 + 3);
                     glVertex2i(p.lColor[i] + 10, i * 25 + 10);
-                    
+
                     glVertex2i(p.rColor[i] + 10, i * 25 + 20);
                     glVertex2i(p.rColor[i] + 14, i * 25 + 27);
                     glVertex2i(p.rColor[i] + 6, i * 25 + 27);
@@ -148,7 +140,7 @@ void display_big() {
             glTranslatef(0, 85, 0);
         }
     } glPopMatrix();
-    
+
     glFlush();
     glutSwapBuffers();
 }
@@ -167,32 +159,32 @@ void mouse_big(int button, int state, int x, int y) {
                             elev = false;
                             param = true;
                             break;
-                            
+
                         case curve::bezier:
                             degree = false;
                             elev = true;
                             param = false;
                             break;
-                            
+
                         case curve::bspline:
                             degree = true;
                             elev = false;
                             param = false;
                             break;
-                            
+
                         case curve::catmullrom:
                             degree = true;
                             elev = false;
                             param = true;
                             break;
-                            
+
                         default:
                             degree = false;
                             elev = false;
                             param = false;
                             break;
                     }
-                    
+
                     if (degree) {
                         if (x > 73 && x < 80) {
                             if (y > 5 && y < 16) {
@@ -267,14 +259,14 @@ void mouse_big(int button, int state, int x, int y) {
             mouseRightDown = state == GLUT_DOWN;
             break;
     }
-    
+
     mouseX = x;
     mouseY = y;
 }
 
 void display_small() {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-    
+
     glBegin(GL_QUADS); {
         glColor3ub(0,0,0);
         glVertex2i(10, 35);
@@ -282,47 +274,47 @@ void display_small() {
         glColor3ub(255,0,0);
         glVertex2i(266, 20);
         glVertex2i(266, 35);
-        
+
         glColor3ub(0,0,0);
         glVertex2i(10, 80);
         glVertex2i(10, 65);
         glColor3ub(0,255,0);
         glVertex2i(266, 65);
         glVertex2i(266, 80);
-        
+
         glColor3ub(0,0,0);
         glVertex2i(10, 125);
         glVertex2i(10, 110);
         glColor3ub(0,0,255);
         glVertex2i(266, 110);
         glVertex2i(266, 125);
-        
+
         glColor3ub(coloring->lColor[0], coloring->lColor[1], coloring->lColor[2]);
         glVertex2i(10, 266);
         glVertex2i(10, 145);
         glVertex2i(138, 145);
         glVertex2i(138, 266);
-        
+
         glColor3ub(coloring->rColor[0], coloring->rColor[1], coloring->rColor[2]);
         glVertex2i(138, 266);
         glVertex2i(138, 145);
         glVertex2i(266, 145);
         glVertex2i(266, 266);
     } glEnd();
-    
+
     glBegin(GL_TRIANGLES); {
         glColor3ub(255,255,255);
         for (int i = 0; i < 3; i++) {
             glVertex2i(coloring->lColor[i] + 6, i * 45 + 13);
             glVertex2i(coloring->lColor[i] + 14, i * 45 + 13);
             glVertex2i(coloring->lColor[i] + 10, i * 45 + 20);
-            
+
             glVertex2i(coloring->rColor[i] + 10, i * 45 + 35);
             glVertex2i(coloring->rColor[i] + 14, i * 45 + 42);
             glVertex2i(coloring->rColor[i] + 6, i * 45 + 42);
         }
     } glEnd();
-    
+
     glFlush();
     glutSwapBuffers();
 }
@@ -352,7 +344,7 @@ void mouse_small(int button, int state, int x, int y) {
             mouseRightDown = state == GLUT_DOWN;
             break;
     }
-    
+
     mouseX = x;
     mouseY = y;
 }
@@ -378,11 +370,11 @@ void key_cp(unsigned char c, int x, int y) {
             glutSetWindow(diffuse_window);
             glutPostRedisplay();
             break;
-            
+
         case 8:
             key(c, x, y);
             break;
-            
+
         case 27: //escape
             glutDestroyWindow(color_picker);
             glutDestroyWindow(diffuse_window);
@@ -394,7 +386,7 @@ void key_cp(unsigned char c, int x, int y) {
 void motion_cp(int x, int y) {
     mouseX = x;
     mouseY = y;
-    
+
     if (selected_color && mouseLeftDown) {
         switch (selected_color) {
             case 1:
@@ -416,12 +408,10 @@ void motion_cp(int x, int y) {
                 coloring->rColor[2] = (x < 265)? ((x > 10)? x-10 : 0) : 255;
                 break;
         }
-        
+
         glutPostRedisplay();
         glutSetWindow(diffuse_window);
         glutPostRedisplay();
         glutSetWindow(color_picker);
     }
 }
-
-#endif /* colorpicker_h */
