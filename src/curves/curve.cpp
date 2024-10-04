@@ -7,51 +7,51 @@
 using namespace std;
 
 
-void Curve::elevate_degree() {}
+void Curve::elevateDegree() {}
 
-uint32_t Curve::get_degree() const {
-    return degree;
+uint32_t Curve::getDegree() const {
+    return m_degree;
 }
 
-uint32_t Curve::get_fidelity() const {
-    return fidelity;
+uint32_t Curve::getFidelity() const {
+    return m_fidelity;
 }
 
-float Curve::get_param() const {
-    return parameterization;
+float Curve::getParam() const {
+    return m_parameterization;
 }
 
-vector<ControlPoint>& Curve::get_cpts() {
-    return c_points;
+vector<ControlPoint>& Curve::getControlPoints() {
+    return m_controlPoints;
 }
 
-void Curve::set_fidelity(uint32_t f) {
-    fidelity = f;
+void Curve::setFidelity(uint32_t f) {
+    m_fidelity = f;
 }
 
-void Curve::param_inc() {
-    if (parameterization < 1.5)
-        parameterization += 0.5;
+void Curve::paramInc() {
+    if (m_parameterization < 1.5)
+        m_parameterization += 0.5;
 }
 
-void Curve::param_dec() {
-    if (parameterization > 0)
-        parameterization -= 0.5;
+void Curve::paramDec() {
+    if (m_parameterization > 0)
+        m_parameterization -= 0.5;
 }
 
-void Curve::degree_inc() {
-    if (get_type() == CurveType::bspline && degree < c_points.size() - 1)
-        degree++;
-    else if (get_type() == CurveType::catmullrom && degree < c_points.size() / 2)
-        degree++;
+void Curve::degreeInc() {
+    if (getType() == CurveType::bspline && m_degree < m_controlPoints.size() - 1)
+        m_degree++;
+    else if (getType() == CurveType::catmullrom && m_degree < m_controlPoints.size() / 2)
+        m_degree++;
 }
 
-void Curve::degree_dec() {
-    if (get_type() > Curve::CurveType::bezier && degree - 1)
-        degree--;
+void Curve::degreeDec() {
+    if (getType() > Curve::CurveType::bezier && m_degree - 1)
+        m_degree--;
 }
 
-vector<float> Curve::generate_knots(const vector<ControlPoint>& c_points, uint32_t size, float parameterization) {
+vector<float> Curve::generateKnots(const vector<ControlPoint>& c_points, uint32_t size, float parameterization) {
     vector<float> knots;
     knots.push_back(0.0);
     for (uint32_t i = 0; i < size; i++)
@@ -68,10 +68,10 @@ void Curve::draw(const vector<ControlPoint>& curve, bool drawPoints, bool select
             auto left = i1->leftside(*i2);
             auto right = i1->rightside(*i2);
 
-            glColor3iv(&i1->l.x);
-            glVertex2fv(&left.p.x);
-            glColor3iv(&i1->r.x);
-            glVertex2fv(&right.p.x);
+            glColor3f(i1->l.x, i1->l.y, i1->l.z);
+            glVertex2f(left.p.x, left.p.y);
+            glColor3f(i1->r.x, i1->r.y, i1->r.z);
+            glVertex2f(right.p.x, left.p.y);
 
             ++i1;
             ++i2;
@@ -79,20 +79,20 @@ void Curve::draw(const vector<ControlPoint>& curve, bool drawPoints, bool select
         auto right = i1->leftside(*(i1 - 1));
         auto left = i1->rightside(*(i1 - 1));
 
-        glColor3iv(&i1->l.x);
-        glVertex2fv(&left.p.x);
-        glColor3iv(&i1->r.x);
-        glVertex2fv(&right.p.x);
+        glColor3f(i1->l.x, i1->l.y, i1->l.z);
+        glVertex2f(left.p.x, left.p.y);
+        glColor3f(i1->r.x, i1->r.y, i1->r.z);
+        glVertex2f(right.p.x, left.p.y);
     } glEnd();
 
     if (drawPoints)
-        for (auto &p : c_points)
+        for (auto &p : m_controlPoints)
             p.draw(selected * ((&p == sp) + 1));
 }
 
 ControlPoint Curve::neville(uint32_t d, uint32_t begin, const vector<float>& knots, float t, map<pair<uint32_t, uint32_t>, ControlPoint>& hash) const {
     if (d == 0)
-        return c_points[begin];
+        return m_controlPoints[begin];
 
     auto key = pair<uint32_t, uint32_t>(d, begin);
     if (auto hashed = hash.find(key); hashed != hash.end())
@@ -106,9 +106,9 @@ ControlPoint Curve::neville(uint32_t d, uint32_t begin, const vector<float>& kno
 
 
 ostream& operator<<(ostream& os, const Curve& c) {
-    os << c.get_type() << endl;
-    os << c.get_degree() << ' ' << c.get_param() << ' ' << c.get_fidelity() << ' ' << c.c_points.size() << endl;
-    for (const auto &pt : c.c_points)
+    os << c.getType() << endl;
+    os << c.getDegree() << ' ' << c.getParam() << ' ' << c.getFidelity() << ' ' << c.m_controlPoints.size() << endl;
+    for (const auto &pt : c.m_controlPoints)
         os << pt << endl;
     return os;
 }

@@ -9,7 +9,7 @@ class BSplineCurve : public Curve {
 public:
     BSplineCurve(const std::list<ControlPoint>& cpts, uint32_t d = 2, uint32_t f = 50);
 
-    virtual Curve::CurveType get_type() const override;
+    virtual Curve::CurveType getType() const override;
 
     virtual void draw(bool drawPoints, bool selected, const ControlPoint* sp) const override;
 

@@ -66,9 +66,27 @@ template <typename T> istream& operator>>(istream& is, V3<T>& v)       { return 
 template <typename T> ostream& operator<<(ostream& os, const V3<T>& v) { return os << v.x << " " << v.y << " " << v.z; }
 
 
-//////////
-// Knot //
-//////////
+///////////
+// Color //
+///////////
+float Color::toFloat(int32_t from) { return static_cast<float>(from) / 255.0f; }
+int32_t Color::toInt(float from) { return static_cast<int32_t>(255.0f * from); }
+
+std::istream& operator>>(std::istream& is, Color& v) {
+    s32v3 in;
+    is >> in.x >> in.y >> in.z;
+    v = { Color::toFloat(in.x), Color::toFloat(in.y), Color::toFloat(in.z) };
+    return is;
+}
+
+std::ostream& operator<<(std::ostream& os, const Color& v) {
+    return os << Color::toInt(v.x) << " " << Color::toInt(v.y) << " " << Color::toInt(v.z);
+}
+
+
+//////////////////
+// ControlPoint //
+//////////////////
 ControlPoint   ControlPoint::operator+(const ControlPoint& c) const { return { p + c.p, l + c.l, r + c.r }; }
 ControlPoint   ControlPoint::operator-(const ControlPoint& c) const { return { p - c.p, l - c.l, r - c.r }; }
 ControlPoint   ControlPoint::operator*(float s) const               { return { p *   s, l *   s, r *   s }; }
@@ -97,10 +115,10 @@ void ControlPoint::draw(int32_t selected) const {
     } glEnd();
 
     glBegin(GL_QUADS); {
-        glColor3iv(&l.x);
+        glColor3f(l.x, l.y, l.z);
         glVertex2f(p.x - POINTSIZE, p.y + POINTSIZE);
         glVertex2f(p.x - POINTSIZE, p.y - POINTSIZE);
-        glColor3iv(&r.x);
+        glColor3f(r.x, r.y, r.z);
         glVertex2f(p.x + POINTSIZE, p.y - POINTSIZE);
         glVertex2f(p.x + POINTSIZE, p.y + POINTSIZE);
     } glEnd();

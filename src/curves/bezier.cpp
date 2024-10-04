@@ -4,41 +4,41 @@ using namespace std;
 
 
 BezierCurve::BezierCurve(const list<ControlPoint>& cpts, uint32_t f) {
-    c_points = vector<ControlPoint>(cpts.begin(), cpts.end());
-    degree = (uint32_t)c_points.size() - 1;
-    parameterization = 0.0;
-    fidelity = f;
+    m_controlPoints = vector<ControlPoint>(cpts.begin(), cpts.end());
+    m_degree = (uint32_t)m_controlPoints.size() - 1;
+    m_parameterization = 0.0;
+    m_fidelity = f;
 }
 
-Curve::CurveType BezierCurve::get_type() const { return Curve::CurveType::bezier; }
+Curve::CurveType BezierCurve::getType() const { return Curve::CurveType::bezier; }
 
 void BezierCurve::draw(const bool drawPoints, const bool selected, const ControlPoint* sp) const {
-    if (c_points.size() < 2)
+    if (m_controlPoints.size() < 2)
         return;
 
     vector<ControlPoint> curve;
-    for (uint32_t t = 0; t <= fidelity; t++)
-        curve.push_back(decasteljau((float)t/(float)fidelity));
+    for (uint32_t t = 0; t <= m_fidelity; t++)
+        curve.push_back(decasteljau((float)t/(float)m_fidelity));
 
     Curve::draw(curve, drawPoints, selected, sp);
 }
 
-void BezierCurve::elevate_degree() {
+void BezierCurve::elevateDegree() {
     auto newpts = vector<ControlPoint>();
 
-    newpts.push_back(c_points.front());
-    for (uint32_t i = 1; i < c_points.size(); i++)
-        newpts.push_back(c_points[i] * (1 - ((float)i / (float)(degree + 1))) + c_points[i - 1] * ((float)i / (float)(degree + 1)));
-    newpts.push_back(c_points.back());
+    newpts.push_back(m_controlPoints.front());
+    for (uint32_t i = 1; i < m_controlPoints.size(); i++)
+        newpts.push_back(m_controlPoints[i] * (1 - ((float)i / (float)(m_degree + 1))) + m_controlPoints[i - 1] * ((float)i / (float)(m_degree + 1)));
+    newpts.push_back(m_controlPoints.back());
 
-    c_points.clear();
-    degree++;
-    c_points = newpts;
+    m_controlPoints.clear();
+    m_degree++;
+    m_controlPoints = newpts;
 }
 
 ControlPoint BezierCurve::decasteljau(uint32_t d, uint32_t begin, float t, map<pair<uint32_t, uint32_t>, ControlPoint>& hash) const {
     if (d == 0)
-        return c_points[begin];
+        return m_controlPoints[begin];
 
     auto key = pair<uint32_t, uint32_t>(d, begin);
     if (auto hashed = hash.find(key); hashed != hash.end())
@@ -49,6 +49,6 @@ ControlPoint BezierCurve::decasteljau(uint32_t d, uint32_t begin, float t, map<p
 
 ControlPoint BezierCurve::decasteljau(float t) const {
     auto hash = map<pair<uint32_t, uint32_t>, ControlPoint>();
-    auto p = decasteljau(c_points.size() - 1ul, 0u, t, hash);
+    auto p = decasteljau(m_controlPoints.size() - 1ul, 0u, t, hash);
     return p;
 }

@@ -18,14 +18,14 @@ using namespace std;
 
 int g_diffuseWindow = 0, g_colorPickerHandle = 0;
 
-int g_smoothness = 25, g_iter = 512;
+int g_smoothness = 25, g_iterations = 512;
 list<ControlPoint> g_points;
 
 ControlPoint *g_moving, *g_coloring;
 std::list<Curve*> g_curves;
 Curve *g_selected;
 
-i32v2 g_cursorLastPos;
+s32v2 g_cursorLastPos;
 
 bool g_mouseLeftDown = false, g_mouseRightDown = false;
 bool g_drawImage = false;
@@ -48,7 +48,7 @@ void display() {
         GLubyte *pixels = new GLubyte[WINDOW_SIZE * WINDOW_SIZE * 3];
         glReadPixels(0, 0, WINDOW_SIZE, WINDOW_SIZE, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 
-        pixels = diffuse(WINDOW_SIZE, pixels, g_smoothness, g_iter);
+        pixels = diffuse(WINDOW_SIZE, pixels, g_smoothness, g_iterations);
 
         glDrawPixels(WINDOW_SIZE, WINDOW_SIZE, GL_RGB, GL_UNSIGNED_BYTE, pixels);
         glFlush();
@@ -94,7 +94,7 @@ void mouse(int button, int state, int x, int y) {
                             g_moving = &p;
                     if (!g_moving)
                         for (auto crv : g_curves)
-                            for (auto &p : crv->get_cpts())
+                            for (auto &p : crv->getControlPoints())
                                 if (p.clicked(clickPos))
                                     g_moving = &p;
 
@@ -134,7 +134,7 @@ void mouse(int button, int state, int x, int y) {
                     }
                     else {
                         for (auto crv : g_curves)
-                            for (auto &p : crv->get_cpts())
+                            for (auto &p : crv->getControlPoints())
                                 if (p.clicked(clickPos)) {
                                     g_coloring = &p;
                                     g_selected = crv;
@@ -146,7 +146,7 @@ void mouse(int button, int state, int x, int y) {
                                 g_colorPickerHandle = 0;
                             }
 
-                            glutInitWindowSize(321, 5 + ColorPicker::BCOLOR_BUFFER + 85 * (int)g_selected->get_cpts().size());
+                            glutInitWindowSize(321, 5 + ColorPicker::BCOLOR_BUFFER + 85 * (int)g_selected->getControlPoints().size());
                             glutInitWindowPosition(WINDOW_OFFX + WINDOW_SIZE + 10, WINDOW_OFFY);
                             g_colorPickerHandle = glutCreateWindow("Select Colors");
                             glutDisplayFunc(ColorPicker::display_big);
@@ -323,15 +323,15 @@ void key(unsigned char c, int x, int y) {
             break;
 
         case '_':
-            if (g_drawImage && g_iter > 4) {
-                g_iter /= 2;
+            if (g_drawImage && g_iterations > 4) {
+                g_iterations /= 2;
                 glutPostRedisplay();
             }
             break;
 
         case '+':
-            if (g_drawImage && g_iter < 512) {
-                g_iter *= 2;
+            if (g_drawImage && g_iterations < 512) {
+                g_iterations *= 2;
                 glutPostRedisplay();
             }
             break;

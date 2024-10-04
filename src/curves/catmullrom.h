@@ -9,7 +9,7 @@ class CatmullRomCurve : public Curve {
 public:
     CatmullRomCurve(const std::list<ControlPoint>& cpts, uint32_t d = 2u, float p = 0.0f, uint32_t f = 50u);
 
-    virtual Curve::CurveType get_type() const override;
+    virtual Curve::CurveType getType() const override;
 
     virtual void draw(bool drawPoints, bool selected, const ControlPoint* sp) const override;
 

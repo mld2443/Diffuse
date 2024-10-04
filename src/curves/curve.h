@@ -11,29 +11,29 @@ class Curve {
 public:
     enum CurveType { lagrange, bezier, bspline, catmullrom };
 
-    virtual CurveType get_type() const =0;
+    virtual CurveType getType() const =0;
     virtual void draw(bool drawPoints, bool selected, const ControlPoint* sp) const =0;
-    virtual void elevate_degree();
+    virtual void elevateDegree();
 
-    uint32_t get_degree() const;
-    uint32_t get_fidelity() const;
-    float get_param() const;
-    std::vector<ControlPoint>& get_cpts();
+    uint32_t getDegree() const;
+    uint32_t getFidelity() const;
+    float getParam() const;
+    std::vector<ControlPoint>& getControlPoints();
 
-    void set_fidelity(uint32_t f);
+    void setFidelity(uint32_t f);
 
-    void param_inc();
-    void param_dec();
+    void paramInc();
+    void paramDec();
 
-    void degree_inc();
-    void degree_dec();
+    void degreeInc();
+    void degreeDec();
 
 protected:
-    std::vector<ControlPoint> c_points;
-    uint32_t degree, fidelity;
-    float parameterization;
+    std::vector<ControlPoint> m_controlPoints;
+    uint32_t m_degree, m_fidelity;
+    float m_parameterization;
 
-    static std::vector<float> generate_knots(const std::vector<ControlPoint>& c_points, uint32_t size, float parameterization);
+    static std::vector<float> generateKnots(const std::vector<ControlPoint>& c_points, uint32_t size, float parameterization);
 
     void draw(const std::vector<ControlPoint>& curve, bool drawPoints, bool selected, const ControlPoint* sp) const;
 
