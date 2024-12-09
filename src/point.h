@@ -65,24 +65,24 @@ template <typename T> std::istream& operator>>(std::istream& is, V3<T>& v);
 template <typename T> std::ostream& operator<<(std::ostream& os, const V3<T>& v);
 
 
-template class V2<float>;   using f32v2 = V2<float>;
-template class V2<int32_t>; using s32v2 = V2<int32_t>;
-template class V3<float>;   using f32v3 = V3<float>;
-template class V3<int32_t>; using s32v3 = V3<int32_t>;
+template class V2<float>;   using f32v2 = V2<float>;   static_assert(sizeof(f32v2) == 2 * sizeof(float));
+template class V2<int32_t>; using s32v2 = V2<int32_t>; static_assert(sizeof(s32v2) == 2 * sizeof(int32_t));
+template class V3<float>;   using f32v3 = V3<float>;   static_assert(sizeof(f32v3) == 3 * sizeof(float));
+template class V3<int32_t>; using s32v3 = V3<int32_t>; static_assert(sizeof(s32v3) == 3 * sizeof(int32_t));
 
 
-class Color : public f32v3 {
+class fColor : public f32v3 {
     static float toFloat(int32_t from);
     static int32_t toInt(float from);
 
-    friend std::istream& operator>>(std::istream& is, Color& v);
-    friend std::ostream& operator<<(std::ostream& os, const Color& v);
+    friend std::istream& operator>>(std::istream& is, fColor& v);
+    friend std::ostream& operator<<(std::ostream& os, const fColor& v);
 };
 
 
 struct ControlPoint {
     f32v2 p;
-    Color l = { 0.3, 0.3, 0.3 }, r = { 0.7, 0.7, 0.7 };
+    fColor l = { 0.3, 0.3, 0.3 }, r = { 0.7, 0.7, 0.7 };
 
     ControlPoint   operator+(const ControlPoint& o) const;
     ControlPoint   operator-(const ControlPoint& o) const;

@@ -66,21 +66,21 @@ template <typename T> istream& operator>>(istream& is, V3<T>& v)       { return 
 template <typename T> ostream& operator<<(ostream& os, const V3<T>& v) { return os << v.x << " " << v.y << " " << v.z; }
 
 
-///////////
-// Color //
-///////////
-float Color::toFloat(int32_t from) { return static_cast<float>(from) / 255.0f; }
-int32_t Color::toInt(float from) { return static_cast<int32_t>(255.0f * from); }
+////////////
+// fColor //
+////////////
+float fColor::toFloat(int32_t from) { return static_cast<float>(from) / 255.0f; }
+int32_t fColor::toInt(float from) { return static_cast<int32_t>(255.0f * from); }
 
-std::istream& operator>>(std::istream& is, Color& v) {
+std::istream& operator>>(std::istream& is, fColor& v) {
     s32v3 in;
     is >> in.x >> in.y >> in.z;
-    v = { Color::toFloat(in.x), Color::toFloat(in.y), Color::toFloat(in.z) };
+    v = { fColor::toFloat(in.x), fColor::toFloat(in.y), fColor::toFloat(in.z) };
     return is;
 }
 
-std::ostream& operator<<(std::ostream& os, const Color& v) {
-    return os << Color::toInt(v.x) << " " << Color::toInt(v.y) << " " << Color::toInt(v.z);
+std::ostream& operator<<(std::ostream& os, const fColor& v) {
+    return os << fColor::toInt(v.x) << " " << fColor::toInt(v.y) << " " << fColor::toInt(v.z);
 }
 
 
