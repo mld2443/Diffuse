@@ -82,18 +82,22 @@ BaseCurve::BaseCurve(std::vector<ControlPoint>&& controlPoints)
 ///////////////////////
 // MARK: SplineCurve //
 ///////////////////////
+std::size_t SplineCurve::getDegree() const {
+    return m_degree;
+}
+
+bool SplineCurve::canDecDegree() const {
+    return m_degree > 1uz;
+}
+
 void SplineCurve::incDegree() {
     if (canIncDegree())
         ++m_degree;
 }
 
 void SplineCurve::decDegree() {
-    if (m_degree > 1uz)
+    if (canDecDegree())
         --m_degree;
-}
-
-std::size_t SplineCurve::getDegree() const {
-    return m_degree;
 }
 
 SplineCurve::SplineCurve(std::size_t degree)
@@ -171,14 +175,15 @@ ControlPoint Interpolant::neville(uint32_t d, uint32_t begin, const std::vector<
 // MARK: Global Functions //
 ////////////////////////////
 std::ostream& operator<<(std::ostream& os, const BaseCurve& curve) {
-    os << curve.getName() << std::endl;
-    if (const SplineCurve* spline = dynamic_cast<const SplineCurve*>(&curve))
-        os << spline->getDegree() << ' ';
-    if (const Interpolant* interp = dynamic_cast<const Interpolant*>(&curve))
-        os << interp->getParam() << ' ';
-
-    os << curve.getFidelity() << ' ' << curve.m_controlPoints.size() << std::endl;
+    os << curve.getName() << ' ' << curve.m_controlPoints.size() << std::endl;
     for (const auto &point : curve.m_controlPoints)
         os << point << std::endl;
-    return os;
+    os << curve.getFidelity();
+
+    if (const SplineCurve* spline = dynamic_cast<const SplineCurve*>(&curve))
+        os << ' ' << spline->getDegree();
+    if (const Interpolant* interp = dynamic_cast<const Interpolant*>(&curve))
+        os << ' ' << interp->getParam();
+
+    return os << std::endl;
 }

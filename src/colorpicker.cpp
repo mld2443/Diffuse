@@ -33,17 +33,29 @@ void ColorPicker::displayCurveColors() {
 
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-    glColor3ubv(dynamic_cast<SplineCurve*>(::g_selected) ? available : disabled);
-    text(10, 18, GLUT_BITMAP_HELVETICA_10, "DEGREE:{}", ::g_selected->getDegree());
-    glBegin(GL_LINES); {
-        glVertex2i(74, 6);
-        glVertex2i(74, 15);
-        glVertex2i(70, 10);
-        glVertex2i(79, 10);
+    const GLubyte *textColor = disabled, *incrColor = nullptr, *decrColor = nullptr;
 
-        glVertex2i(70, 21);
-        glVertex2i(79, 21);
-    } glEnd();
+    if (SplineCurve* spline = dynamic_cast<SplineCurve*>(::g_selected)) {
+        textColor = available;
+        incrColor = spline->canIncDegree() ? available : disabled;
+        decrColor = spline->canDecDegree() ? available : disabled;
+    }
+
+    glColor3ubv(textColor);
+    text(10, 18, GLUT_BITMAP_HELVETICA_10, "DEGREE:{}", ::g_selected->getDegree());
+    if (incrColor && decrColor) {
+        glBegin(GL_LINES); {
+            glColor3ubv(incrColor);
+            glVertex2i(74, 6);
+            glVertex2i(74, 15);
+            glVertex2i(70, 10);
+            glVertex2i(79, 10);
+
+            glColor3ubv(decrColor);
+            glVertex2i(70, 21);
+            glVertex2i(79, 21);
+        } glEnd();
+    }
 
     if (dynamic_cast<BezierCurve*>(::g_selected)) {
         glColor3ubv(available);
@@ -54,11 +66,13 @@ void ColorPicker::displayCurveColors() {
         glColor3ubv(available);
         text(230, 18, GLUT_BITMAP_HELVETICA_10, "PARAM:{:3}", interp->getParam());
         glBegin(GL_LINES); {
+            glColor3ubv(interp->getParam() < 1.5f ? available : disabled);
             glVertex2i(295, 6);
             glVertex2i(295, 15);
             glVertex2i(290, 10);
             glVertex2i(299, 10);
 
+            glColor3ubv(interp->getParam() > 0.0f ? available : disabled);
             glVertex2i(290, 21);
             glVertex2i(299, 21);
         } glEnd();

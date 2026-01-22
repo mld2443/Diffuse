@@ -46,16 +46,17 @@ class GlobalCurve : virtual public BaseCurve {};
 /////////////////
 class SplineCurve : virtual public BaseCurve {
 public:
+    virtual std::size_t getDegree() const override;
+
+    virtual bool canIncDegree() const =0;
+    bool canDecDegree() const;
+
     void incDegree();
     void decDegree();
-
-    virtual std::size_t getDegree() const override;
 
 protected:
     SplineCurve(std::size_t degree);
     SplineCurve(std::istream& is);
-
-    virtual bool canIncDegree() const =0;
 
 private:
     std::size_t m_degree;

@@ -6,6 +6,7 @@
 #include "diffuse.h"
 
 #include <GL/freeglut.h>
+
 #include <fstream>
 #include <list>
 #include <memory>
@@ -149,7 +150,6 @@ void mouse(int button, int state, int x, int y) {
                             }
 
                             const char* title = nullptr;
-
                             if (dynamic_cast<BezierCurve*>(::g_selected))
                                 title = "Bezier Curve";
                             else if (dynamic_cast<LagrangeCurve*>(::g_selected))
@@ -157,7 +157,7 @@ void mouse(int button, int state, int x, int y) {
                             else if (dynamic_cast<BSplineCurve*>(::g_selected))
                                 title = "B-Spline Curve";
                             else if (dynamic_cast<CatmullRomCurve*>(::g_selected))
-                                title = "Catmull-Rom Spline Curve";
+                                title = "Catmull-Rom Curve";
 
                             glutInitWindowSize(321, 5uz + ColorPicker::BCOLOR_BUFFER + 85uz * ::g_selected->getControlPoints().size());
                             glutInitWindowPosition(::WINDOW_OFFX + ::WINDOW_SIZE + 10uz, ::WINDOW_OFFY);
