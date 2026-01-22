@@ -3,14 +3,16 @@
 #include "curve.h"
 
 
-class BezierCurve : public Curve {
+class BezierCurve : public GlobalCurve, public Approximant {
 public:
+    static constexpr const char* name = "bezier";
+
     BezierCurve(std::vector<ControlPoint>&& controlPoints);
-    using Curve::Curve;
+    BezierCurve(std::istream& is);
 
-    virtual Curve::CurveType getType() const override;
+    virtual const char* getName() const override;
 
-    virtual void elevateDegree() override;
+    void elevateDegree();
 
 protected:
     virtual std::vector<ControlPoint> generateInterpolated() const override;

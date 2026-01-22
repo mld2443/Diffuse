@@ -12,26 +12,27 @@
 #include <print>
 #include <vector>
 
-using namespace std;
 
+namespace {
+    constexpr std::size_t WINDOW_SIZE = 512uz;
+    constexpr std::size_t WINDOW_OFFX = 100uz;
+    constexpr std::size_t WINDOW_OFFY = 100uz;
 
-constexpr size_t WINDOW_SIZE = 512uz;
-constexpr size_t WINDOW_OFFX = 100uz;
-constexpr size_t WINDOW_OFFY = 100uz;
+    std::size_t g_smoothness = 25uz, g_iterations = 512uz;
+    bool g_drawImage = false;
+
+    ControlPoint *g_moving = nullptr;
+    s32v2 g_cursorLastPos;
+    bool g_mouseLeftDown = false, g_mouseRightDown = false;
+
+    std::vector<ControlPoint> g_points;
+    std::list<std::unique_ptr<BaseCurve>> g_curves;
+}
 
 int g_diffuseWindow = 0, g_colorPickerHandle = 0;
 
-int g_smoothness = 25, g_iterations = 512;
-std::vector<ControlPoint> g_points;
-
-ControlPoint *g_moving, *g_coloring;
-std::list<std::unique_ptr<Curve>> g_curves;
-Curve *g_selected;
-
-s32v2 g_cursorLastPos;
-
-bool g_mouseLeftDown = false, g_mouseRightDown = false;
-bool g_drawImage = false;
+ControlPoint *g_coloring = nullptr;
+BaseCurve *g_selected = nullptr;
 
 
 void display() {
@@ -84,12 +85,11 @@ void close_color_window(const bool condition) {
 void mouse(int button, int state, int x, int y) {
     f32v2 clickPos{ (float)x, (float)y };
 
-    switch(button)
-    {
+    switch(button) {
         case GLUT_LEFT_BUTTON:
             ::g_mouseLeftDown = state == GLUT_DOWN;
 
-            if (!::g_drawImage){
+            if (!::g_drawImage) {
                 if (::g_mouseLeftDown) {
                     ::g_moving = nullptr;
                     for (auto &p : ::g_points)
@@ -111,7 +111,7 @@ void mouse(int button, int state, int x, int y) {
         case GLUT_RIGHT_BUTTON:
             ::g_mouseRightDown = state == GLUT_DOWN;
 
-            if (!g_drawImage){
+            if (!g_drawImage) {
                 if (::g_mouseRightDown) {
                     ::g_coloring = nullptr;
                     ::g_selected = nullptr;
@@ -127,15 +127,14 @@ void mouse(int button, int state, int x, int y) {
                     if (g_coloring) {
                         glutInitWindowSize(276, 276);
                         glutInitWindowPosition(::WINDOW_OFFX + ::WINDOW_SIZE + 10, ::WINDOW_OFFY + 50);
-                        ::g_colorPickerHandle = glutCreateWindow("Select Color");
-                        glutDisplayFunc(ColorPicker::display_small);
-                        glutMouseFunc(ColorPicker::mouse_small);
+                        ::g_colorPickerHandle = glutCreateWindow("Select point color");
+                        glutDisplayFunc(ColorPicker::displayPointColor);
+                        glutMouseFunc(ColorPicker::mousePointColor);
                         glutMotionFunc(ColorPicker::motion);
                         glutKeyboardFunc(ColorPicker::key);
                         glutReshapeFunc(ColorPicker::reshape);
                         glClearColor(0.2, 0.2, 0.2, 0.0);
-                    }
-                    else {
+                    } else {
                         for (auto& curve : ::g_curves)
                             for (auto &p : curve->getControlPoints())
                                 if (p.clicked(clickPos)) {
@@ -149,11 +148,22 @@ void mouse(int button, int state, int x, int y) {
                                 ::g_colorPickerHandle = 0;
                             }
 
-                            glutInitWindowSize(321, 5 + ColorPicker::BCOLOR_BUFFER + 85 * (int)::g_selected->getControlPoints().size());
-                            glutInitWindowPosition(::WINDOW_OFFX + ::WINDOW_SIZE + 10, ::WINDOW_OFFY);
-                            ::g_colorPickerHandle = glutCreateWindow("Select Colors");
-                            glutDisplayFunc(ColorPicker::display_big);
-                            glutMouseFunc(ColorPicker::mouse_big);
+                            const char* title = nullptr;
+
+                            if (dynamic_cast<BezierCurve*>(::g_selected))
+                                title = "Bezier Curve";
+                            else if (dynamic_cast<LagrangeCurve*>(::g_selected))
+                                title = "Lagrange Curve";
+                            else if (dynamic_cast<BSplineCurve*>(::g_selected))
+                                title = "B-Spline Curve";
+                            else if (dynamic_cast<CatmullRomCurve*>(::g_selected))
+                                title = "Catmull-Rom Spline Curve";
+
+                            glutInitWindowSize(321, 5uz + ColorPicker::BCOLOR_BUFFER + 85uz * ::g_selected->getControlPoints().size());
+                            glutInitWindowPosition(::WINDOW_OFFX + ::WINDOW_SIZE + 10uz, ::WINDOW_OFFY);
+                            ::g_colorPickerHandle = glutCreateWindow(title);
+                            glutDisplayFunc(ColorPicker::displayCurveColors);
+                            glutMouseFunc(ColorPicker::mouseCurveColors);
                             glutMotionFunc(ColorPicker::motion);
                             glutKeyboardFunc(ColorPicker::key);
                             glutReshapeFunc(ColorPicker::reshape);
@@ -191,17 +201,17 @@ void reshape(int w, int h) {
 void save_file() {
     close_color_window(::g_coloring);
 
-    string filename;
-    cout << "save file: ";
-    cin >> filename;
-    ofstream file;
+    std::string filename;
+    std::cout << "save file: ";
+    std::cin >> filename;
+    std::ofstream file;
     file.open(filename);
 
-    file << ::g_curves.size() << endl;
+    file << ::g_curves.size() << std::endl;
     for (auto &c : ::g_curves)
         file << *c;
 
-    file << ::g_points.size() << endl;
+    file << ::g_points.size() << std::endl;
     for (auto &p : ::g_points)
         file << p;
 
@@ -212,53 +222,43 @@ void load_file() {
     close_color_window(::g_coloring);
 
     std::string filename;
-    cout << "load file: ";
-    cin >> filename;
-    std::ifstream file;
-    file.open(filename);
-    ::g_curves.clear();
-    ::g_points.clear();
+    std::cout << "load file: ";
+    std::cin >> filename;
+    if (std::ifstream file(filename); file.is_open()) {
+        ::g_curves.clear();
+        ::g_points.clear();
 
-    std::size_t curveCount;
-    file >> curveCount;
+        std::size_t count;
+        file >> count;
 
-    for (std::size_t curveId = 0uz; curveId < curveCount; ++curveId) {
-        int type;
-        file >> type;
+        for (std::size_t curveId = 0uz; curveId < count; ++curveId) {
+            std::string type;
+            file >> type;
 
-        switch (type) {
-            case Curve::CurveType::bezier:
-                ::g_curves.push_back(std::make_unique<BezierCurve>(file));
-                break;
-            case Curve::CurveType::lagrange:
+            if (type == LagrangeCurve::name)
                 ::g_curves.push_back(std::make_unique<LagrangeCurve>(file));
-                break;
-            case Curve::CurveType::bspline:
+            else if (type == BezierCurve::name)
+                ::g_curves.push_back(std::make_unique<BezierCurve>(file));
+            else if (type == BSplineCurve::name)
                 ::g_curves.push_back(std::make_unique<BSplineCurve>(file));
-                break;
-            case Curve::CurveType::catmullrom:
+            else if (type == CatmullRomCurve::name)
                 ::g_curves.push_back(std::make_unique<CatmullRomCurve>(file));
-                break;
-
-            default:
+            else
                 std::println("file error: invalid type");
-                break;
         }
-    }
-    std::size_t pointCount;
-    file >> pointCount;
-    for (std::size_t j = 0uz; j < pointCount; j++) {
-        ControlPoint p;
-        file >> p;
-        ::g_points.push_back(p);
-    }
+        file >> count;
+        for (std::size_t pointId = 0uz; pointId < count; ++pointId) {
+            ControlPoint p;
+            file >> p;
+            ::g_points.push_back(p);
+        }
 
-    file.close();
+        file.close();
+    }
 }
 
 void key(unsigned char c, int x, int y) {
-    switch(c)
-    {
+    switch(c) {
         case 9: //tab
             break;
 
@@ -387,7 +387,7 @@ int main(int argc, char** argv) {
     glutInitWindowSize(::WINDOW_SIZE, ::WINDOW_SIZE);
     glutInitWindowPosition(::WINDOW_OFFX, ::WINDOW_OFFY);
     ::g_diffuseWindow = glutCreateWindow("Diffusion Curves");
-    init();
+    ::init();
     glutReshapeFunc (reshape);
     glutDisplayFunc(display);
     glutMouseFunc(mouse);

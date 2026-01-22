@@ -2,12 +2,14 @@
 #include "curve.h"
 
 
-class LagrangeCurve : public Curve {
+class LagrangeCurve : public GlobalCurve, public Interpolant {
 public:
-    LagrangeCurve(std::vector<ControlPoint>&& controlPoints);
-    using Curve::Curve;
+    static constexpr const char* name = "lagrange";
 
-    virtual Curve::CurveType getType() const override;
+    LagrangeCurve(std::vector<ControlPoint>&& controlPoints);
+    LagrangeCurve(std::istream& is);
+
+    virtual const char* getName() const override;
 
 protected:
     virtual std::vector<ControlPoint> generateInterpolated() const override;

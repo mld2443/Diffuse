@@ -7,43 +7,85 @@
 #include <cstdint>
 
 
-class Curve {
+class BaseCurve {
+    friend std::ostream& operator<<(std::ostream& os, const BaseCurve& c);
+
 public:
-    enum CurveType { lagrange, bezier, bspline, catmullrom };
+    BaseCurve(std::istream& is);
+    virtual ~BaseCurve() = default;
 
-    Curve(std::istream& is);
-    virtual ~Curve() = default;
+    virtual const char* getName() const =0;
 
-    virtual CurveType getType() const =0;
+    std::vector<ControlPoint>& getControlPoints();
+    virtual std::size_t getDegree() const;
+    std::size_t getFidelity() const;
+
+    void setFidelity(std::size_t fidelity);
 
     void draw(bool drawPoints, bool selected, const ControlPoint* sp) const;
-    virtual void elevateDegree();
 
-    uint32_t getDegree() const;
-    uint32_t getFidelity() const;
+protected:
+    BaseCurve(std::vector<ControlPoint>&& controlPoints);
+
+    virtual std::vector<ControlPoint> generateInterpolated() const =0;
+
+protected:
+    std::vector<ControlPoint> m_controlPoints;
+    std::size_t m_fidelity;
+};
+
+
+/////////////////
+// GlobalCurve //
+/////////////////
+class GlobalCurve : virtual public BaseCurve {};
+
+
+/////////////////
+// SplineCurve //
+/////////////////
+class SplineCurve : virtual public BaseCurve {
+public:
+    void incDegree();
+    void decDegree();
+
+    virtual std::size_t getDegree() const override;
+
+protected:
+    SplineCurve(std::size_t degree);
+    SplineCurve(std::istream& is);
+
+    virtual bool canIncDegree() const =0;
+
+private:
+    std::size_t m_degree;
+};
+
+
+/////////////////
+// Approximant //
+/////////////////
+class Approximant : virtual public BaseCurve {};
+
+
+/////////////////
+// Interpolant //
+/////////////////
+class Interpolant : virtual public BaseCurve {
+public:
     float getParam() const;
-    std::vector<ControlPoint>& getControlPoints();
-
-    void setFidelity(uint32_t f);
 
     void paramInc();
     void paramDec();
 
-    void degreeInc();
-    void degreeDec();
-
-    friend std::ostream& operator<<(std::ostream& os, const Curve& c);
-
 protected:
-    Curve(std::vector<ControlPoint>&& controlPoints, std::size_t degree);
+    Interpolant(float parameterization);
+    Interpolant(std::istream& is);
 
-    std::vector<float> generateKnots(float parameterization) const;
-
-    virtual std::vector<ControlPoint> generateInterpolated() const =0;
+    std::vector<float> generateKnots() const;
 
     ControlPoint neville(uint32_t d, uint32_t begin, const std::vector<float>& knots, float t, std::map<std::pair<uint32_t, uint32_t>, ControlPoint>& hash) const;
 
-    std::vector<ControlPoint> m_controlPoints;
-    std::size_t m_degree, m_fidelity;
+private:
     float m_parameterization;
 };

@@ -1,19 +1,20 @@
 #pragma once
 
-#include <string>
-#include <cstdint>
+#include <format>
+#include <cstddef>
 
 
 namespace ColorPicker {
-    static const uint32_t BCOLOR_BUFFER = 30u;
+    static constexpr std::size_t BCOLOR_BUFFER = 30u;
 
-    void print(const int x, const int y, void* font, const std::string s);
+    template <typename... Args>
+    void text(int x, int y, void* font, const std::format_string<Args...>& fmt, Args&&... args);
 
-    void display_big();
-    void mouse_big(int button, int state, int x, int y);
+    void displayCurveColors();
+    void mouseCurveColors(int button, int state, int x, int y);
 
-    void display_small();
-    void mouse_small(int button, int state, int x, int y);
+    void displayPointColor();
+    void mousePointColor(int button, int state, int x, int y);
 
     void reshape(int w, int h);
     void key(unsigned char c, int x, int y);

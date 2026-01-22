@@ -3,14 +3,18 @@
 #include "curve.h"
 
 
-class CatmullRomCurve : public Curve {
+class CatmullRomCurve : public SplineCurve, public Interpolant {
 public:
-    CatmullRomCurve(std::vector<ControlPoint>&& controlPoints);
-    using Curve::Curve;
+    static constexpr const char* name = "catmullrom";
 
-    virtual Curve::CurveType getType() const override;
+    CatmullRomCurve(std::vector<ControlPoint>&& controlPoints);
+    CatmullRomCurve(std::istream& is);
+
+    virtual const char* getName() const override;
 
 protected:
+    virtual bool canIncDegree() const override;
+
     virtual std::vector<ControlPoint> generateInterpolated() const override;
 
 private:

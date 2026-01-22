@@ -1,26 +1,32 @@
 #include "lagrange.h"
 
-using namespace std;
-
 
 LagrangeCurve::LagrangeCurve(std::vector<ControlPoint>&& controlPoints)
-  : Curve(std::move(controlPoints), controlPoints.size() - 1uz)
+  : BaseCurve(std::move(controlPoints))
+  , GlobalCurve()
+  , Interpolant(0.0)
 {}
 
-Curve::CurveType LagrangeCurve::getType() const { return Curve::CurveType::lagrange; }
+LagrangeCurve::LagrangeCurve(std::istream& is)
+  : BaseCurve(is)
+  , GlobalCurve()
+  , Interpolant(is)
+{}
+
+const char* LagrangeCurve::getName() const { return name; }
 
 std::vector<ControlPoint> LagrangeCurve::generateInterpolated() const {
-    auto knots = generateKnots(m_parameterization);
+    auto knots = generateKnots();
 
-    vector<ControlPoint> interpolated;
-    for (uint32_t t = 0u; t <= (float)m_fidelity * knots[m_degree]; ++t)
+    std::vector<ControlPoint> interpolated;
+    std::size_t degree = getDegree();
+    for (uint32_t t = 0u; t <= (float)m_fidelity * knots[degree]; ++t)
         interpolated.push_back(neville(knots, (float)t/(float)m_fidelity));
 
     return interpolated;
 }
 
-ControlPoint LagrangeCurve::neville(const vector<float>& knots, float t) const {
-    auto hash = map<pair<uint32_t, uint32_t>, ControlPoint>();
-    auto p = Curve::neville(m_degree, 0u, knots, t, hash);
-    return p;
+ControlPoint LagrangeCurve::neville(const std::vector<float>& knots, float t) const {
+    auto hash = std::map<std::pair<uint32_t, uint32_t>, ControlPoint>();
+    return Interpolant::neville(getDegree(), 0u, knots, t, hash);
 }
