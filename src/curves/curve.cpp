@@ -3,6 +3,7 @@
 #include <GL/gl.h>
 #include <utility>
 #include <cmath>
+#include <ranges>
 
 using namespace std;
 
@@ -30,48 +31,76 @@ void Curve::setFidelity(uint32_t f) {
 }
 
 void Curve::paramInc() {
-    if (m_parameterization < 1.5)
-        m_parameterization += 0.5;
+    if (m_parameterization < 1.5f)
+        m_parameterization += 0.5f;
 }
 
 void Curve::paramDec() {
-    if (m_parameterization > 0)
-        m_parameterization -= 0.5;
+    if (m_parameterization > 0.0f)
+        m_parameterization -= 0.5f;
 }
 
 void Curve::degreeInc() {
-    if (getType() == CurveType::bspline && m_degree < m_controlPoints.size() - 1)
+    if (getType() == CurveType::bspline && m_degree < m_controlPoints.size() - 1uz)
         m_degree++;
-    else if (getType() == CurveType::catmullrom && m_degree < m_controlPoints.size() / 2)
+    else if (getType() == CurveType::catmullrom && m_degree < m_controlPoints.size() / 2uz)
         m_degree++;
 }
 
 void Curve::degreeDec() {
-    if (getType() > Curve::CurveType::bezier && m_degree - 1)
+    if (getType() > Curve::CurveType::bezier && m_degree - 1u)
         m_degree--;
 }
 
-vector<float> Curve::generateKnots(const vector<ControlPoint>& c_points, uint32_t size, float parameterization) {
-    vector<float> knots;
-    knots.push_back(0.0);
-    for (uint32_t i = 0; i < size; i++)
-        knots.push_back(knots.back() + pow((c_points[i].p - c_points[i + 1].p).magnitude(), parameterization));
+Curve::Curve(std::vector<ControlPoint>&& controlPoints, uint32_t degree, uint32_t fidelity, float parameterization)
+  : m_controlPoints(std::move(controlPoints))
+  , m_degree(degree)
+  , m_fidelity(fidelity)
+  , m_parameterization(parameterization)
+{}
+
+
+std::vector<float> Curve::generateKnots(float parameterization) const {
+    std::vector<float> knots;
+    knots.reserve(m_controlPoints.size());
+
+    auto transformAndCumulativeSum = [&](auto& range, float sum = 0.0f){
+        return std::views::adjacent_transform<2uz>(range, [&, sum](auto& c0, auto& c1) mutable {
+            sum += std::pow((c0.p - c1.p).magnitude(), parameterization);
+            return sum;
+        });
+    };
+
+    knots.push_back(0.0f);
+    for (const auto& knot : transformAndCumulativeSum(m_controlPoints))
+        knots.push_back(knot);
+
+    const float normalize = static_cast<float>(knots.size() - 1uz)/knots.back();
     for (auto &knot : knots)
-        knot = (knot/knots.back()) * (knots.size() - 1);
+        knot *= normalize;
+
     return knots;
 }
 
-void Curve::draw(const vector<ControlPoint>& curve, bool drawPoints, bool selected, const ControlPoint* sp) const {
+void Curve::draw(bool drawPoints, bool selected, const ControlPoint* sp) const {
+    if (m_controlPoints.size() < 2uz)
+        return;
+
+    const vector<ControlPoint>& interpolated = generateInterpolated();
+
     glBegin(GL_QUAD_STRIP); {
-        auto i2 = curve.begin(), i1 = i2++;
-        while (i2 != curve.end()) {
+//         for (const auto& [c0, c1] : std::views::adjacent<2uz>(generateInterpolated())) {
+// 
+//         }
+        auto i2 = interpolated.begin(), i1 = i2++;
+        while (i2 != interpolated.end()) {
             auto left = i1->leftside(*i2);
             auto right = i1->rightside(*i2);
 
             glColor3f(i1->l.x, i1->l.y, i1->l.z);
             glVertex2f(left.p.x, left.p.y);
             glColor3f(i1->r.x, i1->r.y, i1->r.z);
-            glVertex2f(right.p.x, left.p.y);
+            glVertex2f(right.p.x, right.p.y);
 
             ++i1;
             ++i2;
@@ -82,7 +111,7 @@ void Curve::draw(const vector<ControlPoint>& curve, bool drawPoints, bool select
         glColor3f(i1->l.x, i1->l.y, i1->l.z);
         glVertex2f(left.p.x, left.p.y);
         glColor3f(i1->r.x, i1->r.y, i1->r.z);
-        glVertex2f(right.p.x, left.p.y);
+        glVertex2f(right.p.x, right.p.y);
     } glEnd();
 
     if (drawPoints)

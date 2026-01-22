@@ -3,36 +3,30 @@
 using namespace std;
 
 
-BezierCurve::BezierCurve(const list<ControlPoint>& cpts, uint32_t f) {
-    m_controlPoints = vector<ControlPoint>(cpts.begin(), cpts.end());
-    m_degree = (uint32_t)m_controlPoints.size() - 1;
-    m_parameterization = 0.0;
-    m_fidelity = f;
-}
+BezierCurve::BezierCurve(std::vector<ControlPoint>&& controlPoints, std::size_t fidelity)
+  : Curve(std::move(controlPoints), controlPoints.size() - 1uz, fidelity, 0.0f)
+{}
 
 Curve::CurveType BezierCurve::getType() const { return Curve::CurveType::bezier; }
 
-void BezierCurve::draw(const bool drawPoints, const bool selected, const ControlPoint* sp) const {
-    if (m_controlPoints.size() < 2)
-        return;
-
-    vector<ControlPoint> curve;
+std::vector<ControlPoint> BezierCurve::generateInterpolated() const {
+    vector<ControlPoint> interpolated;
     for (uint32_t t = 0; t <= m_fidelity; t++)
-        curve.push_back(decasteljau((float)t/(float)m_fidelity));
+        interpolated.push_back(decasteljau((float)t/(float)m_fidelity));
 
-    Curve::draw(curve, drawPoints, selected, sp);
+    return interpolated;
 }
 
 void BezierCurve::elevateDegree() {
-    auto newpts = vector<ControlPoint>();
+    vector<ControlPoint> newpts;
 
     newpts.push_back(m_controlPoints.front());
-    for (uint32_t i = 1; i < m_controlPoints.size(); i++)
+    for (std::size_t i = 1uz; i < m_controlPoints.size(); ++i)
         newpts.push_back(m_controlPoints[i] * (1 - ((float)i / (float)(m_degree + 1))) + m_controlPoints[i - 1] * ((float)i / (float)(m_degree + 1)));
     newpts.push_back(m_controlPoints.back());
 
     m_controlPoints.clear();
-    m_degree++;
+    ++m_degree;
     m_controlPoints = newpts;
 }
 

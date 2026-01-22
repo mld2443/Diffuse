@@ -1,74 +1,97 @@
 #pragma once
 
-#include <iostream>
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
+#include <iostream>
 
 
 template <typename T>
 struct V2 {
     T x, y;
 
-    V2   operator-() const;
-    V2   operator+(const V2& v) const;
-    V2   operator-(const V2& v) const;
-    V2   operator*(const V2& v) const;
-    V2   operator/(const V2& v) const;
-    V2   operator*(T s) const;
-    V2   operator/(T s) const;
-    V2&  operator=(const V2& v);
-    V2& operator+=(const V2& v);
-    V2& operator-=(const V2& v);
-    V2& operator*=(const V2& v);
-    V2& operator/=(const V2& v);
-    V2& operator*=(T s);
-    V2& operator/=(T s);
+    inline V2   operator-()            const { return { -x, -y };           }
+    inline V2   operator+(const V2& v) const { return { x + v.x, y + v.y }; }
+    inline V2   operator-(const V2& v) const { return { x - v.x, y - v.y }; }
+    inline V2   operator*(T d)         const { return { x * d,   y * d };   }
+    inline V2   operator/(T d)         const { return { x / d,   y / d };   }
+    inline V2& operator+=(const V2& v) { x += v.x; y += v.y; return *this; }
+    inline V2& operator-=(const V2& v) { x -= v.x; y -= v.y; return *this; }
+    inline V2& operator*=(T d)         { x *= d;   y *= d;   return *this; }
+    inline V2& operator/=(T d)         { x /= d;   y /= d;   return *this; }
 
-    T dot(const V2& v) const;
+    inline T    dot(const V2& v) const { return x*v.x + y*v.y; }
 
-    T magnitudeSqr() const;
-    T    magnitude() const;
-    V2   direction() const;
+    inline T magnitudeSqr() const { return this->dot(*this);    }
+    inline T    magnitude() const { return std::hypot(x, y);    }
+    inline V2  normalized() const { return *this / magnitude(); }
+
+    inline bool equals(const V2& v, T epsilon = T(1.0e-6)) const {
+        return std::fabs(x - v.x) < epsilon &&
+               std::fabs(y - v.y) < epsilon;
+    }
+    inline bool operator==(const V2& v) const { return equals(v); }
+
+    inline T max() const { return std::max({ x, y }); }
 };
 
-template <typename T> std::istream& operator>>(std::istream& is, V2<T>& v);
-template <typename T> std::ostream& operator<<(std::ostream& os, const V2<T>& v);
+template <typename T>
+std::istream& operator>>(std::istream& is, V2<T>& v) {
+    return is >> v.x >> v.y;
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const V2<T>& v) {
+    return os << v.x << " " << v.y;
+}
 
 
 template <typename T>
 struct V3 {
     T x, y, z;
 
-    V3   operator-() const;
-    V3   operator+(const V3& v) const;
-    V3   operator-(const V3& v) const;
-    V3   operator*(const V3& v) const;
-    V3   operator/(const V3& v) const;
-    V3   operator*(T s) const;
-    V3   operator/(T s) const;
-    V3&  operator=(const V3& v);
-    V3& operator+=(const V3& v);
-    V3& operator-=(const V3& v);
-    V3& operator*=(const V3& v);
-    V3& operator/=(const V3& v);
-    V3& operator*=(T s);
-    V3& operator/=(T s);
+    inline V3   operator-()            const { return { -x, -y, -z };                }
+    inline V3   operator+(const V3& v) const { return { x + v.x, y + v.y, z + v.z }; }
+    inline V3   operator-(const V3& v) const { return { x - v.x, y - v.y, z - v.z }; }
+    inline V3   operator*(T d)         const { return { x * d,   y * d,   z * d };   }
+    inline V3   operator/(T d)         const { return { x / d,   y / d,   z / d };   }
+    inline V3& operator+=(const V3& v) { x += v.x; y += v.y; z += v.z; return *this; }
+    inline V3& operator-=(const V3& v) { x -= v.x; y -= v.y; z -= v.z; return *this; }
+    inline V3& operator*=(T d)         { x *= d;   y *= d;   z *= d;   return *this; }
+    inline V3& operator/=(T d)         { x /= d;   y /= d;   z /= d;   return *this; }
 
-    T    dot(const V3& v) const;
-    V3 cross(const V3& v) const;
+    inline T    dot(const V3& v) const { return x*v.x + y*v.y + z*v.z;                           }
+    inline V3 cross(const V3& v) const { return { y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x }; }
 
-    T magnitudeSqr() const;
-    T    magnitude() const;
-    V3   direction() const;
+    inline T magnitudeSqr() const { return this->dot(*this);    }
+    inline T    magnitude() const { return std::hypot(x, y, z); }
+    inline V3  normalized() const { return *this / magnitude(); }
+
+    inline bool equals(const V3& v, T epsilon = T(1.0e-6)) const {
+        return std::fabs(x - v.x) < epsilon &&
+               std::fabs(y - v.y) < epsilon &&
+               std::fabs(z - v.z) < epsilon;
+    }
+    inline bool operator==(const V3& v) const { return equals(v); }
+
+    inline T max() const { return std::max({ x, y, z }); }
 };
 
-template <typename T> std::istream& operator>>(std::istream& is, V3<T>& v);
-template <typename T> std::ostream& operator<<(std::ostream& os, const V3<T>& v);
+template <typename T>
+std::istream& operator>>(std::istream& is, V3<T>& v) {
+    return is >> v.x >> v.y >> v.z;
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const V3<T>& v) {
+    return os << v.x << " " << v.y << " " << v.z;
+}
 
 
-template class V2<float>;   using f32v2 = V2<float>;   static_assert(sizeof(f32v2) == 2 * sizeof(float));
-template class V2<int32_t>; using s32v2 = V2<int32_t>; static_assert(sizeof(s32v2) == 2 * sizeof(int32_t));
-template class V3<float>;   using f32v3 = V3<float>;   static_assert(sizeof(f32v3) == 3 * sizeof(float));
-template class V3<int32_t>; using s32v3 = V3<int32_t>; static_assert(sizeof(s32v3) == 3 * sizeof(int32_t));
+using f32v2 = V2<float>;
+using s32v2 = V2<int32_t>;
+using f32v3 = V3<float>;
+using s32v3 = V3<int32_t>;
 
 
 class fColor : public f32v3 {

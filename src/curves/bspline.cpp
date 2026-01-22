@@ -3,25 +3,19 @@
 using namespace std;
 
 
-BSplineCurve::BSplineCurve(const list<ControlPoint>& cpts, uint32_t d, uint32_t f) {
-    m_controlPoints = vector<ControlPoint>(cpts.begin(), cpts.end());
-    m_degree = d;
-    m_parameterization = 0.0;
-    m_fidelity = f;
-}
+BSplineCurve::BSplineCurve(std::vector<ControlPoint>&& controlPoints, std::size_t degree, std::size_t fidelity)
+  : Curve(std::move(controlPoints), degree, fidelity, 0.0f)
+{}
 
 Curve::CurveType BSplineCurve::getType() const { return Curve::CurveType::bspline; }
 
-void BSplineCurve::draw(bool drawPoints, bool selected, const ControlPoint* sp) const {
-    if (m_controlPoints.size() < 2)
-        return;
-
-    vector<ControlPoint> curve;
+std::vector<ControlPoint> BSplineCurve::generateInterpolated() const {
+    vector<ControlPoint> interpolated;
     for (uint32_t piece = 0; piece < m_controlPoints.size() - m_degree; piece++)
         for (float t = 0; t < m_fidelity; t++)
-            curve.push_back(deboor(piece, ((float)t / (float)m_fidelity) + piece + m_degree - 1));
+            interpolated.push_back(deboor(piece, ((float)t / (float)m_fidelity) + piece + m_degree - 1));
 
-    Curve::draw(curve, drawPoints, selected, sp);
+    return interpolated;
 }
 
 ControlPoint BSplineCurve::deboor(uint32_t d, uint32_t begin, float t, map<pair<uint32_t, uint32_t>, ControlPoint>& hash) const {

@@ -8,21 +8,24 @@
 #include <GL/freeglut.h>
 #include <fstream>
 #include <list>
+#include <memory>
+#include <print>
+#include <vector>
 
 using namespace std;
 
 
-#define WINDOW_SIZE 512
-#define WINDOW_OFFX 100
-#define WINDOW_OFFY 100
+constexpr size_t WINDOW_SIZE = 512uz;
+constexpr size_t WINDOW_OFFX = 100uz;
+constexpr size_t WINDOW_OFFY = 100uz;
 
 int g_diffuseWindow = 0, g_colorPickerHandle = 0;
 
 int g_smoothness = 25, g_iterations = 512;
-list<ControlPoint> g_points;
+std::vector<ControlPoint> g_points;
 
 ControlPoint *g_moving, *g_coloring;
-std::list<Curve*> g_curves;
+std::list<std::unique_ptr<Curve>> g_curves;
 Curve *g_selected;
 
 s32v2 g_cursorLastPos;
@@ -34,25 +37,25 @@ bool g_drawImage = false;
 void display() {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-    for (const auto &curve : g_curves)
-        curve->draw(!g_drawImage, curve == g_selected, g_coloring);
-
-    if (!g_drawImage) {
-        for (const auto &p : g_points)
-            p.draw((&p == g_moving) + (&p == g_coloring) * 2);
-    }
-
-    glFlush();
+    for (const auto &curve : ::g_curves)
+        curve->draw(!::g_drawImage, curve.get() == ::g_selected, ::g_coloring);
 
     if (g_drawImage) {
-        GLubyte *pixels = new GLubyte[WINDOW_SIZE * WINDOW_SIZE * 3];
-        glReadPixels(0, 0, WINDOW_SIZE, WINDOW_SIZE, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-
-        pixels = diffuse(WINDOW_SIZE, pixels, g_smoothness, g_iterations);
-
-        glDrawPixels(WINDOW_SIZE, WINDOW_SIZE, GL_RGB, GL_UNSIGNED_BYTE, pixels);
         glFlush();
-        delete[] pixels;
+
+        std::vector<RGB<GLfloat>> rawPixels(::WINDOW_SIZE * ::WINDOW_SIZE);
+
+        glReadPixels(0, 0, ::WINDOW_SIZE, ::WINDOW_SIZE, GL_RGB, GL_FLOAT, rawPixels.data());
+
+        rawPixels = pyramidDiffusion(Image<GLfloat>(rawPixels, ::WINDOW_SIZE, ::WINDOW_SIZE), ::g_smoothness).convertToRGB();
+
+        glDrawPixels(::WINDOW_SIZE, ::WINDOW_SIZE, GL_RGB, GL_FLOAT, rawPixels.data());
+        glFlush();
+    } else {
+        for (const auto &p : ::g_points)
+            p.draw((&p == ::g_moving) + (&p == ::g_coloring) * 2);
+
+        glFlush();
     }
 
     glutSwapBuffers();
@@ -72,9 +75,9 @@ void init() {
 
 void close_color_window(const bool condition) {
     if (condition) {
-        glutDestroyWindow(g_colorPickerHandle);
-        g_colorPickerHandle = 0;
-        g_coloring = nullptr;
+        glutDestroyWindow(::g_colorPickerHandle);
+        ::g_colorPickerHandle = 0;
+        ::g_coloring = nullptr;
     }
 }
 
@@ -84,47 +87,47 @@ void mouse(int button, int state, int x, int y) {
     switch(button)
     {
         case GLUT_LEFT_BUTTON:
-            g_mouseLeftDown = state == GLUT_DOWN;
+            ::g_mouseLeftDown = state == GLUT_DOWN;
 
-            if (!g_drawImage){
-                if (g_mouseLeftDown) {
-                    g_moving = nullptr;
-                    for (auto &p : g_points)
+            if (!::g_drawImage){
+                if (::g_mouseLeftDown) {
+                    ::g_moving = nullptr;
+                    for (auto &p : ::g_points)
                         if (p.clicked(clickPos))
-                            g_moving = &p;
-                    if (!g_moving)
-                        for (auto crv : g_curves)
-                            for (auto &p : crv->getControlPoints())
+                            ::g_moving = &p;
+                    if (!::g_moving)
+                        for (auto& curve : ::g_curves)
+                            for (auto &p : curve->getControlPoints())
                                 if (p.clicked(clickPos))
-                                    g_moving = &p;
+                                    ::g_moving = &p;
 
-                    if (!g_moving) {
-                        g_points.push_back(ControlPoint{ clickPos });
+                    if (!::g_moving) {
+                        ::g_points.push_back(ControlPoint{ clickPos });
                     }
                 }
                 glutPostRedisplay();
             }
             break;
         case GLUT_RIGHT_BUTTON:
-            g_mouseRightDown = state == GLUT_DOWN;
+            ::g_mouseRightDown = state == GLUT_DOWN;
 
             if (!g_drawImage){
-                if (g_mouseRightDown) {
-                    g_coloring = nullptr;
-                    g_selected = nullptr;
-                    if (g_colorPickerHandle) {
-                        glutDestroyWindow(g_colorPickerHandle);
-                        g_colorPickerHandle = 0;
+                if (::g_mouseRightDown) {
+                    ::g_coloring = nullptr;
+                    ::g_selected = nullptr;
+                    if (::g_colorPickerHandle) {
+                        glutDestroyWindow(::g_colorPickerHandle);
+                        ::g_colorPickerHandle = 0;
                     }
 
-                    for (auto &p : g_points)
+                    for (auto &p : ::g_points)
                         if (p.clicked(clickPos))
-                            g_coloring = &p;
+                            ::g_coloring = &p;
 
                     if (g_coloring) {
                         glutInitWindowSize(276, 276);
-                        glutInitWindowPosition(WINDOW_OFFX + WINDOW_SIZE + 10, WINDOW_OFFY + 50);
-                        g_colorPickerHandle = glutCreateWindow("Select Color");
+                        glutInitWindowPosition(::WINDOW_OFFX + ::WINDOW_SIZE + 10, ::WINDOW_OFFY + 50);
+                        ::g_colorPickerHandle = glutCreateWindow("Select Color");
                         glutDisplayFunc(ColorPicker::display_small);
                         glutMouseFunc(ColorPicker::mouse_small);
                         glutMotionFunc(ColorPicker::motion);
@@ -133,22 +136,22 @@ void mouse(int button, int state, int x, int y) {
                         glClearColor(0.2, 0.2, 0.2, 0.0);
                     }
                     else {
-                        for (auto crv : g_curves)
-                            for (auto &p : crv->getControlPoints())
+                        for (auto& curve : ::g_curves)
+                            for (auto &p : curve->getControlPoints())
                                 if (p.clicked(clickPos)) {
-                                    g_coloring = &p;
-                                    g_selected = crv;
+                                    ::g_coloring = &p;
+                                    ::g_selected = curve.get();
                                 }
 
-                        if (g_selected) {
-                            if (g_colorPickerHandle) {
-                                glutDestroyWindow(g_colorPickerHandle);
-                                g_colorPickerHandle = 0;
+                        if (::g_selected) {
+                            if (::g_colorPickerHandle) {
+                                glutDestroyWindow(::g_colorPickerHandle);
+                                ::g_colorPickerHandle = 0;
                             }
 
-                            glutInitWindowSize(321, 5 + ColorPicker::BCOLOR_BUFFER + 85 * (int)g_selected->getControlPoints().size());
-                            glutInitWindowPosition(WINDOW_OFFX + WINDOW_SIZE + 10, WINDOW_OFFY);
-                            g_colorPickerHandle = glutCreateWindow("Select Colors");
+                            glutInitWindowSize(321, 5 + ColorPicker::BCOLOR_BUFFER + 85 * (int)::g_selected->getControlPoints().size());
+                            glutInitWindowPosition(::WINDOW_OFFX + ::WINDOW_SIZE + 10, ::WINDOW_OFFY);
+                            ::g_colorPickerHandle = glutCreateWindow("Select Colors");
                             glutDisplayFunc(ColorPicker::display_big);
                             glutMouseFunc(ColorPicker::mouse_big);
                             glutMotionFunc(ColorPicker::motion);
@@ -157,22 +160,22 @@ void mouse(int button, int state, int x, int y) {
                             glClearColor(0.2, 0.2, 0.2, 0.0);
                         }
                     }
-                    glutSetWindow(g_diffuseWindow);
+                    glutSetWindow(::g_diffuseWindow);
                     glutPostRedisplay();
                 }
             }
             break;
     }
 
-    g_cursorLastPos = { x, y };
+    ::g_cursorLastPos = { x, y };
 }
 
 void motion(int x, int y) {
-    g_cursorLastPos = { x, y };
+    ::g_cursorLastPos = { x, y };
 
-    if (g_mouseLeftDown && g_moving) {
-        g_moving->p.x = x;
-        g_moving->p.y = y;
+    if (::g_mouseLeftDown && ::g_moving) {
+        ::g_moving->p.x = x;
+        ::g_moving->p.y = y;
         glutPostRedisplay();
     }
 }
@@ -186,83 +189,81 @@ void reshape(int w, int h) {
 }
 
 void save_file() {
-    close_color_window(g_coloring);
+    close_color_window(::g_coloring);
 
     string filename;
-    printf("save file: ");
+    cout << "save file: ";
     cin >> filename;
     ofstream file;
     file.open(filename);
 
-    file << g_curves.size() << endl;
-    for (auto &c : g_curves)
+    file << ::g_curves.size() << endl;
+    for (auto &c : ::g_curves)
         file << *c;
 
-    file << g_points.size() << endl;
-    for (auto &p : g_points)
+    file << ::g_points.size() << endl;
+    for (auto &p : ::g_points)
         file << p;
 
     file.close();
 }
 
 void load_file() {
-    close_color_window(g_coloring);
+    close_color_window(::g_coloring);
 
-    string filename;
-    printf("load file: ");
+    std::string filename;
+    cout << "load file: ";
     cin >> filename;
-    ifstream file;
+    std::ifstream file;
     file.open(filename);
-    g_curves.clear();
-    g_points.clear();
+    ::g_curves.clear();
+    ::g_points.clear();
 
-    unsigned int num_curves;
-    file >> num_curves;
+    std::size_t curveCount;
+    file >> curveCount;
 
-    for (unsigned int i = 0; i < num_curves; i++) {
+    for (std::size_t curveId = 0uz; curveId < curveCount; ++curveId) {
         int type;
         file >> type;
 
-        unsigned int degree, fidel, size;
-        float param;
-        file >> degree >> param >> fidel >> size;
+        std::size_t degree, fidelity, count;
+        float parameterization;
+        file >> degree >> parameterization >> fidelity >> count;
 
-        for (int j = 0; j < size; j++) {
+        std::vector<ControlPoint> controlPoints;
+        controlPoints.reserve(count);
+
+        for (std::size_t j = 0uz; j < count; ++j) {
             ControlPoint p;
             file >> p;
-            g_points.push_back(p);
+            controlPoints.push_back(p);
         }
 
-        Curve *crv = nullptr;
         switch (type) {
-            case Curve::CurveType::lagrange:
-                crv = new LagrangeCurve(g_points, param, fidel);
-                break;
             case Curve::CurveType::bezier:
-                crv = new BezierCurve(g_points, fidel);
+                ::g_curves.push_back(std::make_unique<BezierCurve>(std::move(controlPoints), fidelity));
+                break;
+            case Curve::CurveType::lagrange:
+                ::g_curves.push_back(std::make_unique<LagrangeCurve>(std::move(controlPoints), fidelity, parameterization));
                 break;
             case Curve::CurveType::bspline:
-                crv = new BSplineCurve(g_points, degree, fidel);
+                ::g_curves.push_back(std::make_unique<BSplineCurve>(std::move(controlPoints), degree, fidelity));
                 break;
             case Curve::CurveType::catmullrom:
-                crv = new CatmullRomCurve(g_points, degree, param, fidel);
+                ::g_curves.push_back(std::make_unique<CatmullRomCurve>(std::move(controlPoints), degree, fidelity, parameterization));
                 break;
 
             default:
-                printf("file error: invalid type\n");
+                std::println("file error: invalid type");
                 break;
         }
-        if (crv)
-            g_curves.push_back(crv);
-
-        g_points.clear();
     }
-    int size;
-    file >> size;
-    for (int j = 0; j < size; j++) {
+    std::size_t pointCount;
+    file >> pointCount;
+    for (std::size_t j = 0uz; j < pointCount; j++) {
         ControlPoint p;
         file >> p;
-        g_points.push_back(p);
+        ::g_points.push_back(p);
     }
 
     file.close();
@@ -278,114 +279,113 @@ void key(unsigned char c, int x, int y) {
             break;
 
         case 8: //delete
-            if (!g_drawImage && g_selected) {
-                close_color_window(g_coloring);
+            if (!::g_drawImage && ::g_selected) {
+                close_color_window(::g_coloring);
 
-                auto it = g_curves.begin();
-                for (; *it != g_selected && it != g_curves.end(); it++);
-                g_curves.erase(it);
-                delete g_selected;
-                g_selected = nullptr;
-                glutSetWindow(g_diffuseWindow);
+                auto it = ::g_curves.begin();
+                for (; it->get() != ::g_selected && it != ::g_curves.end(); it++);
+                ::g_curves.erase(it);
+                ::g_selected = nullptr;
+                glutSetWindow(::g_diffuseWindow);
                 glutPostRedisplay();
             }
             break;
 
         case 127: //backspace
-            if (!g_drawImage && g_moving){
-                close_color_window(g_moving == g_coloring);
+            if (!::g_drawImage && ::g_moving){
+                close_color_window(::g_moving == ::g_coloring);
 
-                auto it = g_points.begin();
-                for (; &(*it) != g_moving && it != g_points.end(); it++);
-                g_points.erase(it);
-                g_moving = nullptr;
+                auto it = ::g_points.begin();
+                for (; &(*it) != ::g_moving && it != ::g_points.end(); it++);
+                ::g_points.erase(it);
+                ::g_moving = nullptr;
                 glutPostRedisplay();
             }
             break;
 
         case ' ':
-            g_drawImage = !g_drawImage;
+            ::g_drawImage = !::g_drawImage;
             glutPostRedisplay();
             break;
 
         case '-':
-            if (g_drawImage && g_smoothness > 25) {
-                g_smoothness -= 25;
+            if (::g_drawImage && ::g_smoothness > 25) {
+                ::g_smoothness -= 25;
                 glutPostRedisplay();
             }
             break;
 
         case '=':
-            if (g_drawImage && g_smoothness < 100) {
-                g_smoothness += 25;
+            if (::g_drawImage && ::g_smoothness < 100) {
+                ::g_smoothness += 25;
                 glutPostRedisplay();
             }
             break;
 
         case '_':
-            if (g_drawImage && g_iterations > 4) {
-                g_iterations /= 2;
+            if (::g_drawImage && ::g_iterations > 4) {
+                ::g_iterations /= 2;
                 glutPostRedisplay();
             }
             break;
 
         case '+':
-            if (g_drawImage && g_iterations < 512) {
-                g_iterations *= 2;
+            if (::g_drawImage && ::g_iterations < 512) {
+                ::g_iterations *= 2;
                 glutPostRedisplay();
             }
             break;
 
         { case 's':
-            if (!g_drawImage && g_curves.size())
+            if (!::g_drawImage && ::g_curves.size())
                 save_file();
             break;
 
         case 'l':
-            if (!g_drawImage) {
+            if (!::g_drawImage) {
                 load_file();
                 glutPostRedisplay();
             }
             break; }
 
         { case '1':
-            if (!g_drawImage && g_points.size() > 1) {
-                close_color_window(g_coloring);
-                g_curves.push_back(new LagrangeCurve(g_points));
-                g_points.clear();
+            if (!::g_drawImage && ::g_points.size() > 1uz) {
+                close_color_window(::g_coloring);
+                ::g_curves.push_back(std::make_unique<LagrangeCurve>(std::move(::g_points)));
+                ::g_points.clear();
                 glutPostRedisplay();
             }
             break;
 
         case '2':
-            if (!g_drawImage && g_points.size() > 1) {
-                close_color_window(g_coloring);
-                g_curves.push_back(new BezierCurve(g_points));
-                g_points.clear();
+            if (!::g_drawImage && ::g_points.size() > 1uz) {
+                close_color_window(::g_coloring);
+                ::g_curves.push_back(std::make_unique<BezierCurve>(std::move(::g_points)));
+                ::g_points.clear();
                 glutPostRedisplay();
             }
             break;
 
         case '3':
-            if (!g_drawImage && g_points.size() > 1) {
-                close_color_window(g_coloring);
-                g_curves.push_back(new BSplineCurve(g_points));
-                g_points.clear();
+            if (!::g_drawImage && ::g_points.size() > 1uz) {
+                close_color_window(::g_coloring);
+                ::g_curves.push_back(std::make_unique<BSplineCurve>(std::move(::g_points)));
+                ::g_points.clear();
                 glutPostRedisplay();
             }
             break;
 
         case '4':
-            if (!g_drawImage && g_points.size() > 1) {
-                close_color_window(g_coloring);
-                g_curves.push_back(new CatmullRomCurve(g_points));
-                g_points.clear();
+            if (!::g_drawImage && ::g_points.size() > 1uz) {
+                close_color_window(::g_coloring);
+                ::g_curves.push_back(std::make_unique<CatmullRomCurve>(std::move(::g_points)));
+                ::g_points.clear();
                 glutPostRedisplay();
             }
             break; }
 
         case 27: //escape
-            glutDestroyWindow(g_diffuseWindow);
+            glutDestroyWindow(::g_diffuseWindow);
             exit(0);
             break;
 
@@ -397,9 +397,9 @@ void key(unsigned char c, int x, int y) {
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB);
-    glutInitWindowSize(WINDOW_SIZE, WINDOW_SIZE);
-    glutInitWindowPosition(WINDOW_OFFX, WINDOW_OFFY);
-    g_diffuseWindow = glutCreateWindow("Diffusion Curves");
+    glutInitWindowSize(::WINDOW_SIZE, ::WINDOW_SIZE);
+    glutInitWindowPosition(::WINDOW_OFFX, ::WINDOW_OFFY);
+    ::g_diffuseWindow = glutCreateWindow("Diffusion Curves");
     init();
     glutReshapeFunc (reshape);
     glutDisplayFunc(display);
