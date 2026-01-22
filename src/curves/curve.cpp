@@ -84,7 +84,7 @@ BaseCurve::BaseCurve(std::vector<ControlPoint>&& controlPoints)
 ///////////////////////
 void SplineCurve::incDegree() {
     if (canIncDegree())
-        --m_degree;
+        ++m_degree;
 }
 
 void SplineCurve::decDegree() {
