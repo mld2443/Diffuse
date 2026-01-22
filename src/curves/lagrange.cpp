@@ -27,6 +27,6 @@ std::vector<ControlPoint> LagrangeCurve::generateInterpolated() const {
 }
 
 ControlPoint LagrangeCurve::neville(const std::vector<float>& knots, float t) const {
-    auto hash = std::map<std::pair<uint32_t, uint32_t>, ControlPoint>();
-    return Interpolant::neville(getDegree(), 0u, knots, t, hash);
+    std::map<std::pair<std::size_t, std::size_t>, ControlPoint> memo;
+    return Interpolant::neville(getDegree(), 0u, knots, t, memo);
 }

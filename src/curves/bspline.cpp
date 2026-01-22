@@ -28,20 +28,19 @@ std::vector<ControlPoint> BSplineCurve::generateInterpolated() const {
     return interpolated;
 }
 
-ControlPoint BSplineCurve::deboor(uint32_t d, uint32_t begin, float t, std::map<std::pair<uint32_t, uint32_t>, ControlPoint>& hash) const {
+ControlPoint BSplineCurve::deboor(std::size_t d, std::size_t begin, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& memo) const {
     if (d == 0)
         return m_controlPoints[begin];
 
-    auto key = std::pair<uint32_t, uint32_t>(d, begin);
-    if (auto hashed = hash.find(key); hashed != hash.end())
+    auto key = std::pair(d, begin);
+    if (auto hashed = memo.find(key); hashed != memo.end())
         return hashed->second;
 
-    return hash[key] = ((deboor(d - 1, begin, t, hash) * (begin + getDegree() - t)) +
-                        (deboor(d - 1, begin + 1, t, hash) * (t - (d + begin - 1)))) / d;
+    return memo[key] = ((deboor(d - 1, begin, t, memo) * (begin + getDegree() - t)) +
+                        (deboor(d - 1, begin + 1, t, memo) * (t - (d + begin - 1)))) / d;
 }
 
-ControlPoint BSplineCurve::deboor(uint32_t piece, float t) const {
-    auto hash = std::map<std::pair<uint32_t, uint32_t>, ControlPoint>();
-    auto p = deboor(getDegree(), piece, t, hash);
-    return p;
+ControlPoint BSplineCurve::deboor(std::size_t piece, float t) const {
+    std::map<std::pair<std::size_t, std::size_t>, ControlPoint> memo;
+    return deboor(getDegree(), piece, t, memo);
 }

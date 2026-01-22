@@ -32,24 +32,24 @@ std::vector<ControlPoint> CatmullRomCurve::generateInterpolated() const {
     return interpolated;
 }
 
-ControlPoint CatmullRomCurve::deboor(uint32_t d, uint32_t begin, const std::vector<float>& knots, float t, std::map<std::pair<uint32_t, uint32_t>, ControlPoint>& hash) const {
-    auto key = std::pair<uint32_t, uint32_t>(d + getDegree(), begin);
-    if (auto hashed = hash.find(key); hashed != hash.end())
+ControlPoint CatmullRomCurve::deboor(std::size_t d, std::size_t begin, const std::vector<float>& knots, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& memo) const {
+    auto key = std::pair(d + getDegree(), begin);
+    if (auto hashed = memo.find(key); hashed != memo.end())
         return hashed->second;
 
     if (d == 1u)
-        return hash[key] =
-            ((neville(getDegree() - 1, begin, knots, t, hash) * (knots[begin + getDegree()] - t)) +
-             (neville(getDegree() - 1, begin + 1, knots, t, hash) * (t - knots[d + begin - 1]))) /
+        return memo[key] =
+            ((neville(getDegree() - 1, begin, knots, t, memo) * (knots[begin + getDegree()] - t)) +
+             (neville(getDegree() - 1, begin + 1, knots, t, memo) * (t - knots[d + begin - 1]))) /
             (knots[begin + getDegree()] - knots[d + begin - 1]);
 
-    return hash[key] =
-        ((deboor(d - 1, begin, knots, t, hash) * (knots[begin + getDegree()] - t)) +
-         (deboor(d - 1, begin + 1, knots, t, hash) * (t - knots[d + begin - 1]))) /
+    return memo[key] =
+        ((deboor(d - 1, begin, knots, t, memo) * (knots[begin + getDegree()] - t)) +
+         (deboor(d - 1, begin + 1, knots, t, memo) * (t - knots[d + begin - 1]))) /
         (knots[begin + getDegree()] - knots[d + begin - 1]);
 }
 
-ControlPoint CatmullRomCurve::deboor(const std::vector<float>& knots, uint32_t piece, float t) const {
-    auto hash = std::map<std::pair<uint32_t, uint32_t>, ControlPoint>();
-    return deboor(getDegree(), piece, knots, t, hash);
+ControlPoint CatmullRomCurve::deboor(const std::vector<float>& knots, std::size_t piece, float t) const {
+    std::map<std::pair<std::size_t, std::size_t>, ControlPoint> memo;
+    return deboor(getDegree(), piece, knots, t, memo);
 }

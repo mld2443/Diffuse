@@ -4,7 +4,6 @@
 
 #include <vector>
 #include <map>
-#include <cstdint>
 
 
 class BaseCurve {
@@ -85,7 +84,7 @@ protected:
 
     std::vector<float> generateKnots() const;
 
-    ControlPoint neville(uint32_t d, uint32_t begin, const std::vector<float>& knots, float t, std::map<std::pair<uint32_t, uint32_t>, ControlPoint>& hash) const;
+    ControlPoint neville(std::size_t d, std::size_t begin, const std::vector<float>& knots, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& hash) const;
 
 private:
     float m_parameterization;

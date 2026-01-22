@@ -35,19 +35,18 @@ void BezierCurve::elevateDegree() {
     m_controlPoints = newpts;
 }
 
-ControlPoint BezierCurve::decasteljau(uint32_t d, uint32_t begin, float t, std::map<std::pair<uint32_t, uint32_t>, ControlPoint>& hash) const {
-    if (d == 0)
+ControlPoint BezierCurve::decasteljau(std::size_t d, std::size_t begin, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& memo) const {
+    if (d == 0uz)
         return m_controlPoints[begin];
 
-    auto key = std::pair<uint32_t, uint32_t>(d, begin);
-    if (auto hashed = hash.find(key); hashed != hash.end())
+    auto key = std::pair(d, begin);
+    if (auto hashed = memo.find(key); hashed != memo.end())
         return hashed->second;
 
-    return hash[key] = (decasteljau(d - 1u, begin, t, hash) * (1.0f - t)) + (decasteljau(d - 1u, begin + 1u, t, hash) * t);
+    return memo[key] = (decasteljau(d - 1uz, begin, t, memo) * (1.0f - t)) + (decasteljau(d - 1uz, begin + 1uz, t, memo) * t);
 }
 
 ControlPoint BezierCurve::decasteljau(float t) const {
-    auto hash = std::map<std::pair<uint32_t, uint32_t>, ControlPoint>();
-    auto p = decasteljau(m_controlPoints.size() - 1ul, 0u, t, hash);
-    return p;
+    std::map<std::pair<std::size_t, std::size_t>, ControlPoint> memo;
+    return decasteljau(getDegree(), 0uz, t, memo);
 }

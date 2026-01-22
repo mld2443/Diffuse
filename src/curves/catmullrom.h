@@ -18,6 +18,6 @@ protected:
     virtual std::vector<ControlPoint> generateInterpolated() const override;
 
 private:
-    ControlPoint deboor(uint32_t d, uint32_t begin, const std::vector<float>& knots, float t, std::map<std::pair<uint32_t, uint32_t>, ControlPoint>& hash) const;
-    ControlPoint deboor(const std::vector<float>& knots, uint32_t piece, float t) const;
+    ControlPoint deboor(std::size_t d, std::size_t begin, const std::vector<float>& knots, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& memo) const;
+    ControlPoint deboor(const std::vector<float>& knots, std::size_t piece, float t) const;
 };

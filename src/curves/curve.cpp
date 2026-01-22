@@ -156,17 +156,17 @@ std::vector<float> Interpolant::generateKnots() const {
     return knots;
 }
 
-ControlPoint Interpolant::neville(uint32_t d, uint32_t begin, const std::vector<float>& knots, float t, std::map<std::pair<uint32_t, uint32_t>, ControlPoint>& hash) const {
+ControlPoint Interpolant::neville(std::size_t d, std::size_t begin, const std::vector<float>& knots, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& memo) const {
     if (d == 0)
         return m_controlPoints[begin];
 
-    auto key = std::pair<uint32_t, uint32_t>(d, begin);
-    if (auto hashed = hash.find(key); hashed != hash.end())
+    auto key = std::pair(d, begin);
+    if (auto hashed = memo.find(key); hashed != memo.end())
         return hashed->second;
 
-    return hash[key] =
-        ((neville(d - 1, begin, knots, t, hash) * (knots[begin + d] - t)) +
-         (neville(d - 1, begin + 1, knots, t, hash) * (t - knots[begin]))) /
+    return memo[key] =
+        ((neville(d - 1, begin, knots, t, memo) * (knots[begin + d] - t)) +
+         (neville(d - 1, begin + 1, knots, t, memo) * (t - knots[begin]))) /
         (knots[begin + d] - knots[begin]);
 }
 
