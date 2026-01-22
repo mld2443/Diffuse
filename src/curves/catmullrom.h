@@ -2,12 +2,11 @@
 
 #include "curve.h"
 
-#include <list>
-
 
 class CatmullRomCurve : public Curve {
 public:
-    CatmullRomCurve(std::vector<ControlPoint>&& controlPoints, std::size_t degree = 2uz, std::size_t fidelity = 50uz, float parameterization = 0.0f);
+    CatmullRomCurve(std::vector<ControlPoint>&& controlPoints);
+    using Curve::Curve;
 
     virtual Curve::CurveType getType() const override;
 

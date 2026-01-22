@@ -3,8 +3,8 @@
 using namespace std;
 
 
-LagrangeCurve::LagrangeCurve(std::vector<ControlPoint>&& controlPoints, std::size_t fidelity, float parameterization)
-  : Curve(std::move(controlPoints), controlPoints.size() - 1uz, fidelity, parameterization)
+LagrangeCurve::LagrangeCurve(std::vector<ControlPoint>&& controlPoints)
+  : Curve(std::move(controlPoints), controlPoints.size() - 1uz)
 {}
 
 Curve::CurveType LagrangeCurve::getType() const { return Curve::CurveType::lagrange; }

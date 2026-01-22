@@ -11,6 +11,7 @@ class Curve {
 public:
     enum CurveType { lagrange, bezier, bspline, catmullrom };
 
+    Curve(std::istream& is);
     virtual ~Curve() = default;
 
     virtual CurveType getType() const =0;
@@ -34,7 +35,7 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const Curve& c);
 
 protected:
-    Curve(std::vector<ControlPoint>&&, uint32_t, uint32_t, float);
+    Curve(std::vector<ControlPoint>&& controlPoints, std::size_t degree);
 
     std::vector<float> generateKnots(float parameterization) const;
 

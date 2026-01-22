@@ -226,31 +226,18 @@ void load_file() {
         int type;
         file >> type;
 
-        std::size_t degree, fidelity, count;
-        float parameterization;
-        file >> degree >> parameterization >> fidelity >> count;
-
-        std::vector<ControlPoint> controlPoints;
-        controlPoints.reserve(count);
-
-        for (std::size_t j = 0uz; j < count; ++j) {
-            ControlPoint p;
-            file >> p;
-            controlPoints.push_back(p);
-        }
-
         switch (type) {
             case Curve::CurveType::bezier:
-                ::g_curves.push_back(std::make_unique<BezierCurve>(std::move(controlPoints), fidelity));
+                ::g_curves.push_back(std::make_unique<BezierCurve>(file));
                 break;
             case Curve::CurveType::lagrange:
-                ::g_curves.push_back(std::make_unique<LagrangeCurve>(std::move(controlPoints), fidelity, parameterization));
+                ::g_curves.push_back(std::make_unique<LagrangeCurve>(file));
                 break;
             case Curve::CurveType::bspline:
-                ::g_curves.push_back(std::make_unique<BSplineCurve>(std::move(controlPoints), degree, fidelity));
+                ::g_curves.push_back(std::make_unique<BSplineCurve>(file));
                 break;
             case Curve::CurveType::catmullrom:
-                ::g_curves.push_back(std::make_unique<CatmullRomCurve>(std::move(controlPoints), degree, fidelity, parameterization));
+                ::g_curves.push_back(std::make_unique<CatmullRomCurve>(file));
                 break;
 
             default:

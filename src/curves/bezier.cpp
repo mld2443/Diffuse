@@ -3,15 +3,15 @@
 using namespace std;
 
 
-BezierCurve::BezierCurve(std::vector<ControlPoint>&& controlPoints, std::size_t fidelity)
-  : Curve(std::move(controlPoints), controlPoints.size() - 1uz, fidelity, 0.0f)
+BezierCurve::BezierCurve(std::vector<ControlPoint>&& controlPoints)
+  : Curve(std::move(controlPoints), controlPoints.size() - 1uz)
 {}
 
 Curve::CurveType BezierCurve::getType() const { return Curve::CurveType::bezier; }
 
 std::vector<ControlPoint> BezierCurve::generateInterpolated() const {
     vector<ControlPoint> interpolated;
-    for (uint32_t t = 0; t <= m_fidelity; t++)
+    for (std::size_t t = 0uz; t <= m_fidelity; ++t)
         interpolated.push_back(decasteljau((float)t/(float)m_fidelity));
 
     return interpolated;

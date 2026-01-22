@@ -5,7 +5,8 @@
 
 class BezierCurve : public Curve {
 public:
-    BezierCurve(std::vector<ControlPoint>&& controlPoints, std::size_t fidelity = 50uz);
+    BezierCurve(std::vector<ControlPoint>&& controlPoints);
+    using Curve::Curve;
 
     virtual Curve::CurveType getType() const override;
 

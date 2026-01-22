@@ -3,8 +3,8 @@
 using namespace std;
 
 
-BSplineCurve::BSplineCurve(std::vector<ControlPoint>&& controlPoints, std::size_t degree, std::size_t fidelity)
-  : Curve(std::move(controlPoints), degree, fidelity, 0.0f)
+BSplineCurve::BSplineCurve(std::vector<ControlPoint>&& controlPoints)
+  : Curve(std::move(controlPoints), 2uz)
 {}
 
 Curve::CurveType BSplineCurve::getType() const { return Curve::CurveType::bspline; }

@@ -4,7 +4,8 @@
 
 class LagrangeCurve : public Curve {
 public:
-    LagrangeCurve(std::vector<ControlPoint>&& controlPoints, std::size_t fidelity = 50uz, float parameterization = 0.0f);
+    LagrangeCurve(std::vector<ControlPoint>&& controlPoints);
+    using Curve::Curve;
 
     virtual Curve::CurveType getType() const override;
 

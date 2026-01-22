@@ -3,8 +3,8 @@
 using namespace std;
 
 
-CatmullRomCurve::CatmullRomCurve(std::vector<ControlPoint>&& controlPoints, std::size_t degree, std::size_t fidelity, float parameterization)
-  : Curve(std::move(controlPoints), degree, fidelity, parameterization)
+CatmullRomCurve::CatmullRomCurve(std::vector<ControlPoint>&& controlPoints)
+  : Curve(std::move(controlPoints), 2uz)
 {}
 
 Curve::CurveType CatmullRomCurve::getType() const { return Curve::CurveType::catmullrom; }

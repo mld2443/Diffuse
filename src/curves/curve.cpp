@@ -52,12 +52,25 @@ void Curve::degreeDec() {
         m_degree--;
 }
 
-Curve::Curve(std::vector<ControlPoint>&& controlPoints, uint32_t degree, uint32_t fidelity, float parameterization)
+Curve::Curve(std::vector<ControlPoint>&& controlPoints, std::size_t degree)
   : m_controlPoints(std::move(controlPoints))
   , m_degree(degree)
-  , m_fidelity(fidelity)
-  , m_parameterization(parameterization)
+  , m_fidelity(50uz)
+  , m_parameterization(0.0f)
 {}
+
+Curve::Curve(std::istream& is) {
+    std::size_t count;
+    is >> m_degree >> m_parameterization >> m_fidelity >> count;
+
+    m_controlPoints.reserve(count);
+
+    for (std::size_t j = 0uz; j < count; ++j) {
+        ControlPoint p;
+        is >> p;
+        m_controlPoints.push_back(p);
+    }
+}
 
 
 std::vector<float> Curve::generateKnots(float parameterization) const {
@@ -89,9 +102,6 @@ void Curve::draw(bool drawPoints, bool selected, const ControlPoint* sp) const {
     const vector<ControlPoint>& interpolated = generateInterpolated();
 
     glBegin(GL_QUAD_STRIP); {
-//         for (const auto& [c0, c1] : std::views::adjacent<2uz>(generateInterpolated())) {
-// 
-//         }
         auto i2 = interpolated.begin(), i1 = i2++;
         while (i2 != interpolated.end()) {
             auto left = i1->leftside(*i2);
@@ -134,10 +144,10 @@ ControlPoint Curve::neville(uint32_t d, uint32_t begin, const vector<float>& kno
 }
 
 
-ostream& operator<<(ostream& os, const Curve& c) {
-    os << c.getType() << endl;
-    os << c.getDegree() << ' ' << c.getParam() << ' ' << c.getFidelity() << ' ' << c.m_controlPoints.size() << endl;
+std::ostream& operator<<(std::ostream& os, const Curve& c) {
+    os << c.getType() << std::endl;
+    os << c.getDegree() << ' ' << c.getParam() << ' ' << c.getFidelity() << ' ' << c.m_controlPoints.size() << std::endl;
     for (const auto &pt : c.m_controlPoints)
-        os << pt << endl;
+        os << pt << std::endl;
     return os;
 }
