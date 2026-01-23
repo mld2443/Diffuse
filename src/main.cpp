@@ -23,7 +23,7 @@ namespace {
     bool g_drawImage = false;
 
     ControlPoint *g_moving = nullptr;
-    s32v2 g_cursorLastPos;
+    i32v2 g_cursorLastPos;
     bool g_mouseLeftDown = false, g_mouseRightDown = false;
 
     std::vector<ControlPoint> g_points;

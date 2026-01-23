@@ -36,6 +36,11 @@ struct V2 {
 };
 
 template <typename T>
+V2<T> operator*(const T& lhs, const V2<T>& rhs) {
+    return { lhs * rhs.x, lhs * rhs.y };
+}
+
+template <typename T>
 std::istream& operator>>(std::istream& is, V2<T>& v) {
     return is >> v.x >> v.y;
 }
@@ -78,6 +83,11 @@ struct V3 {
 };
 
 template <typename T>
+V3<T> operator*(const T& lhs, const V3<T>& rhs) {
+    return { lhs * rhs.x, lhs * rhs.y, lhs * rhs.z };
+}
+
+template <typename T>
 std::istream& operator>>(std::istream& is, V3<T>& v) {
     return is >> v.x >> v.y >> v.z;
 }
@@ -89,13 +99,13 @@ std::ostream& operator<<(std::ostream& os, const V3<T>& v) {
 
 
 using f32v2 = V2<float>;
-using s32v2 = V2<int32_t>;
+using i32v2 = V2<int32_t>;
 using f32v3 = V3<float>;
-using s32v3 = V3<int32_t>;
+using i32v3 = V3<int32_t>;
 
 
 class fColor : public f32v3 {
-    static float toFloat(int32_t from);
+    static float toUnorm(int32_t from);
     static int32_t toInt(float from);
 
     friend std::istream& operator>>(std::istream& is, fColor& v);
@@ -127,5 +137,6 @@ struct ControlPoint {
     bool clicked(const f32v2& clickPos) const;
 };
 
+ControlPoint  operator* (float lhs, const ControlPoint& rhs);
 std::istream& operator>>(std::istream& is, ControlPoint& k);
 std::ostream& operator<<(std::ostream& os, const ControlPoint& k);

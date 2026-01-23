@@ -65,7 +65,10 @@ private:
 /////////////////
 // Approximant //
 /////////////////
-class Approximant : virtual public BaseCurve {};
+class Approximant : virtual public BaseCurve {
+protected:
+    ControlPoint decasteljau2(const std::vector<ControlPoint>& points, float t) const;
+};
 
 
 /////////////////
@@ -84,7 +87,9 @@ protected:
 
     std::vector<float> generateKnots() const;
 
-    ControlPoint neville(std::size_t d, std::size_t begin, const std::vector<float>& knots, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& hash) const;
+    ControlPoint neville(std::size_t degree, std::size_t index, const std::vector<float>& knots, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& hash) const;
+    ControlPoint neville2(const std::vector<ControlPoint>& points, const std::vector<float>& knots, float t) const;
+
 
 private:
     float m_parameterization;

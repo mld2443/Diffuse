@@ -15,14 +15,6 @@ BezierCurve::BezierCurve(std::istream& is)
 
 const char* BezierCurve::getName() const { return name; }
 
-std::vector<ControlPoint> BezierCurve::generateInterpolated() const {
-    std::vector<ControlPoint> interpolated;
-    for (std::size_t t = 0uz; t <= m_fidelity; ++t)
-        interpolated.push_back(decasteljau(static_cast<float>(t)/static_cast<float>(m_fidelity)));
-
-    return interpolated;
-}
-
 void BezierCurve::elevateDegree() {
     std::vector<ControlPoint> newpts;
 
@@ -35,18 +27,10 @@ void BezierCurve::elevateDegree() {
     m_controlPoints = newpts;
 }
 
-ControlPoint BezierCurve::decasteljau(std::size_t d, std::size_t begin, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& memo) const {
-    if (d == 0uz)
-        return m_controlPoints[begin];
+std::vector<ControlPoint> BezierCurve::generateInterpolated() const {
+    std::vector<ControlPoint> interpolated;
+    for (std::size_t t = 0uz; t <= m_fidelity; ++t)
+        interpolated.push_back(decasteljau2(m_controlPoints, static_cast<float>(t)/static_cast<float>(m_fidelity)));
 
-    auto key = std::pair(d, begin);
-    if (auto hashed = memo.find(key); hashed != memo.end())
-        return hashed->second;
-
-    return memo[key] = (decasteljau(d - 1uz, begin, t, memo) * (1.0f - t)) + (decasteljau(d - 1uz, begin + 1uz, t, memo) * t);
-}
-
-ControlPoint BezierCurve::decasteljau(float t) const {
-    std::map<std::pair<std::size_t, std::size_t>, ControlPoint> memo;
-    return decasteljau(getDegree(), 0uz, t, memo);
+    return interpolated;
 }

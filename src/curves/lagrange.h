@@ -14,7 +14,4 @@ public:
 
 protected:
     virtual std::vector<ControlPoint> generateInterpolated() const override;
-
-private:
-    ControlPoint neville(const std::vector<float>& knots, float t) const;
 };

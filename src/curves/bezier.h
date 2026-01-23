@@ -16,9 +16,4 @@ public:
 
 protected:
     virtual std::vector<ControlPoint> generateInterpolated() const override;
-
-private:
-    ControlPoint decasteljau(std::size_t d, std::size_t begin, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& memo) const;
-
-    ControlPoint decasteljau(float t) const;
 };

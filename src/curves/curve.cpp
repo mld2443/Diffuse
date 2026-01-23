@@ -108,6 +108,23 @@ SplineCurve::SplineCurve(std::istream& is) {
     is >> m_degree;
 }
 
+///////////////////////
+// MARK: Approximant //
+///////////////////////
+ControlPoint Approximant::decasteljau2(const std::vector<ControlPoint>& lowerDegree, float t) const {
+    std::vector<ControlPoint> higherDegree;
+    higherDegree.reserve(lowerDegree.size() - 1uz);
+
+    using namespace std::ranges::views;
+    for (const auto& [left, right] : adjacent<2>(lowerDegree))
+        higherDegree.push_back((1 - t) * left + t * right);
+
+    if (higherDegree.size() == 1uz)
+        return higherDegree.front();
+
+    return decasteljau2(higherDegree, t);
+}
+
 
 ///////////////////////
 // MARK: Interpolant //
@@ -156,18 +173,39 @@ std::vector<float> Interpolant::generateKnots() const {
     return knots;
 }
 
-ControlPoint Interpolant::neville(std::size_t d, std::size_t begin, const std::vector<float>& knots, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& memo) const {
-    if (d == 0)
-        return m_controlPoints[begin];
+ControlPoint Interpolant::neville(std::size_t degree, std::size_t index, const std::vector<float>& knots, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& memo) const {
+    if (degree == 0uz)
+        return m_controlPoints[index];
 
-    auto key = std::pair(d, begin);
-    if (auto hashed = memo.find(key); hashed != memo.end())
-        return hashed->second;
+    auto key = std::pair(degree, index);
+    if (auto cached = memo.find(key); cached != memo.end())
+        return cached->second;
 
-    return memo[key] =
-        ((neville(d - 1, begin, knots, t, memo) * (knots[begin + d] - t)) +
-         (neville(d - 1, begin + 1, knots, t, memo) * (t - knots[begin]))) /
-        (knots[begin + d] - knots[begin]);
+    const float t_l = knots[index], t_r = knots[index + degree];
+    return memo[key] = ((t_r - t  ) * neville(degree - 1uz, index      , knots, t, memo)
+                     +  (t   - t_l) * neville(degree - 1uz, index + 1uz, knots, t, memo))
+                     /  (t_r - t_l);
+}
+
+ControlPoint Interpolant::neville2(const std::vector<ControlPoint>& lowerDegree, const std::vector<float>& knots, float t) const {
+    const std::size_t degree = knots.size() - lowerDegree.size() + 1uz;
+
+    std::vector<ControlPoint> higherDegree;
+    higherDegree.reserve(lowerDegree.size() - 1uz);
+
+    using namespace std::ranges::views;
+    for (const auto& [left, right, t_l, t_r] : zip(lowerDegree,
+                                                   drop(lowerDegree, 1uz),
+                                                   knots,
+                                                   drop(knots, degree)))
+        higherDegree.push_back(((t_r - t  ) * left
+                              + (t   - t_l) * right)
+                              / (t_r - t_l));
+
+    if (higherDegree.size() == 1uz)
+        return higherDegree.front();
+
+    return neville2(higherDegree, knots, t);
 }
 
 

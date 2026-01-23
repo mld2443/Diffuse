@@ -11,13 +11,13 @@ using namespace std;
 ////////////
 // fColor //
 ////////////
-float fColor::toFloat(int32_t from) { return static_cast<float>(from) / 255.0f; }
+float fColor::toUnorm(int32_t from) { return static_cast<float>(from) / 255.0f; }
 int32_t fColor::toInt(float from) { return static_cast<int32_t>(255.0f * from); }
 
 std::istream& operator>>(std::istream& is, fColor& v) {
-    s32v3 in;
+    i32v3 in;
     is >> in.x >> in.y >> in.z;
-    v = { fColor::toFloat(in.x), fColor::toFloat(in.y), fColor::toFloat(in.z) };
+    v = { fColor::toUnorm(in.x), fColor::toUnorm(in.y), fColor::toUnorm(in.z) };
     return is;
 }
 
@@ -84,5 +84,6 @@ bool ControlPoint::clicked(const f32v2& clickPos) const {
     return abs(p.x - clickPos.x) < (2 * POINTSIZE) && abs(p.y - clickPos.y) < (2 * POINTSIZE);
 }
 
+ControlPoint operator* (float lhs, const ControlPoint& rhs) { return { .p = lhs * rhs.p, .l = lhs * rhs.l, .r = lhs * rhs.r }; }
 istream& operator>>(istream& is, ControlPoint& k)       { return is >> k.p        >> k.l        >> k.r; }
 ostream& operator<<(ostream& os, const ControlPoint& k) { return os << k.p << ' ' << k.l << ' ' << k.r; }
