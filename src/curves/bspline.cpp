@@ -19,7 +19,7 @@ bool BSplineCurve::canIncDegree() const {
     return getDegree() + 1uz < m_controlPoints.size();
 }
 
-std::vector<ControlPoint> BSplineCurve::generateInterpolated() const {
+std::vector<ControlPoint> BSplineCurve::evaluateCurve() const {
     std::vector<ControlPoint> interpolated;
     for (uint32_t piece = 0; piece < m_controlPoints.size() - getDegree(); piece++)
         for (float t = 0; t < m_fidelity; t++)

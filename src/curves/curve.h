@@ -16,7 +16,7 @@ public:
     virtual const char* getName() const =0;
 
     std::vector<ControlPoint>& getControlPoints();
-    virtual std::size_t getDegree() const;
+    virtual std::size_t getDegree() const =0;
     std::size_t getFidelity() const;
 
     void setFidelity(std::size_t fidelity);
@@ -26,7 +26,7 @@ public:
 protected:
     BaseCurve(std::vector<ControlPoint>&& controlPoints);
 
-    virtual std::vector<ControlPoint> generateInterpolated() const =0;
+    virtual std::vector<ControlPoint> evaluateCurve() const =0;
 
 protected:
     std::vector<ControlPoint> m_controlPoints;
@@ -37,7 +37,10 @@ protected:
 /////////////////
 // GlobalCurve //
 /////////////////
-class GlobalCurve : virtual public BaseCurve {};
+class GlobalCurve : virtual public BaseCurve {
+protected:
+    virtual std::size_t getDegree() const override;
+};
 
 
 /////////////////
@@ -67,7 +70,7 @@ private:
 /////////////////
 class Approximant : virtual public BaseCurve {
 protected:
-    ControlPoint decasteljau2(const std::vector<ControlPoint>& points, float t) const;
+    ControlPoint decasteljau(const std::vector<ControlPoint>& points, float t) const;
 };
 
 

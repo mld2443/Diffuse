@@ -27,10 +27,6 @@ std::vector<ControlPoint>& BaseCurve::getControlPoints() {
     return m_controlPoints;
 }
 
-std::size_t BaseCurve::getDegree() const {
-    return m_controlPoints.size() - 1uz;
-}
-
 std::size_t BaseCurve::getFidelity() const {
     return m_fidelity;
 }
@@ -39,44 +35,53 @@ void BaseCurve::setFidelity(std::size_t f) {
     m_fidelity = f;
 }
 
-void BaseCurve::draw(bool drawPoints, bool selected, const ControlPoint* sp) const {
+void BaseCurve::draw(bool drawPoints, bool isCurveSelected, const ControlPoint* selectedPoint) const {
     if (m_controlPoints.size() < 2uz)
         return;
 
-    const std::vector<ControlPoint>& expanded = generateInterpolated();
+    auto sampled = evaluateCurve();
 
     glBegin(GL_QUAD_STRIP); {
-        auto i2 = expanded.begin(), i1 = i2++;
-        while (i2 != expanded.end()) {
+        auto i2 = sampled.begin(), i1 = i2++;
+        while (i2 != sampled.end()) {
             auto left = i1->leftside(*i2);
             auto right = i1->rightside(*i2);
 
-            glColor3f(i1->l.x, i1->l.y, i1->l.z);
-            glVertex2f(left.p.x, left.p.y);
-            glColor3f(i1->r.x, i1->r.y, i1->r.z);
-            glVertex2f(right.p.x, right.p.y);
+            glColor3fv(&i1->l.x);
+            glVertex2fv(&left.p.x);
+            glColor3fv(&i1->r.x);
+            glVertex2fv(&right.p.x);
 
             ++i1;
             ++i2;
         }
-        auto right = i1->leftside(*(i1 - 1));
-        auto left = i1->rightside(*(i1 - 1));
 
-        glColor3f(i1->l.x, i1->l.y, i1->l.z);
-        glVertex2f(left.p.x, left.p.y);
-        glColor3f(i1->r.x, i1->r.y, i1->r.z);
-        glVertex2f(right.p.x, right.p.y);
+        // Draw last point with special care for tangent.
+        auto right = i1->leftside(*(i1 - 1uz));
+        auto left = i1->rightside(*(i1 - 1uz));
+
+        glColor3fv(&i1->l.x);
+        glVertex2fv(&left.p.x);
+        glColor3fv(&i1->r.x);
+        glVertex2fv(&right.p.x);
     } glEnd();
 
     if (drawPoints)
-        for (auto &p : m_controlPoints)
-            p.draw(selected * ((&p == sp) + 1));
+        for (const auto &point : m_controlPoints)
+            point.draw(isCurveSelected, isCurveSelected && &point == selectedPoint);
 }
 
 BaseCurve::BaseCurve(std::vector<ControlPoint>&& controlPoints)
   : m_controlPoints(std::move(controlPoints))
   , m_fidelity(50uz)
 {}
+
+///////////////////////
+// MARK: GlobalCurve //
+///////////////////////
+std::size_t GlobalCurve::getDegree() const {
+    return m_controlPoints.size() - 1uz;
+}
 
 
 ///////////////////////
@@ -108,10 +113,11 @@ SplineCurve::SplineCurve(std::istream& is) {
     is >> m_degree;
 }
 
+
 ///////////////////////
 // MARK: Approximant //
 ///////////////////////
-ControlPoint Approximant::decasteljau2(const std::vector<ControlPoint>& lowerDegree, float t) const {
+ControlPoint Approximant::decasteljau(const std::vector<ControlPoint>& lowerDegree, float t) const {
     std::vector<ControlPoint> higherDegree;
     higherDegree.reserve(lowerDegree.size() - 1uz);
 
@@ -122,7 +128,7 @@ ControlPoint Approximant::decasteljau2(const std::vector<ControlPoint>& lowerDeg
     if (higherDegree.size() == 1uz)
         return higherDegree.front();
 
-    return decasteljau2(higherDegree, t);
+    return decasteljau(higherDegree, t);
 }
 
 

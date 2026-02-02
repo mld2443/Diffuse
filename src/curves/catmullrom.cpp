@@ -19,7 +19,7 @@ bool CatmullRomCurve::canIncDegree() const {
     return getDegree() < m_controlPoints.size() / 2uz;
 }
 
-std::vector<ControlPoint> CatmullRomCurve::generateInterpolated() const {
+std::vector<ControlPoint> CatmullRomCurve::evaluateCurve() const {
     auto knots = generateKnots();
 
     std::vector<ControlPoint> interpolated;

@@ -15,5 +15,5 @@ public:
     void elevateDegree();
 
 protected:
-    virtual std::vector<ControlPoint> generateInterpolated() const override;
+    virtual std::vector<ControlPoint> evaluateCurve() const override;
 };

@@ -55,7 +55,7 @@ void display() {
         glFlush();
     } else {
         for (const auto &p : ::g_points)
-            p.draw((&p == ::g_moving) + (&p == ::g_coloring) * 2);
+            p.draw(&p == ::g_moving, &p == ::g_coloring);
 
         glFlush();
     }

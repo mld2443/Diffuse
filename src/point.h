@@ -55,35 +55,39 @@ template <typename T>
 struct V3 {
     T x, y, z;
 
-    inline V3   operator-()            const { return { -x, -y, -z };                }
-    inline V3   operator+(const V3& v) const { return { x + v.x, y + v.y, z + v.z }; }
-    inline V3   operator-(const V3& v) const { return { x - v.x, y - v.y, z - v.z }; }
-    inline V3   operator*(T d)         const { return { x * d,   y * d,   z * d };   }
-    inline V3   operator/(T d)         const { return { x / d,   y / d,   z / d };   }
-    inline V3& operator+=(const V3& v) { x += v.x; y += v.y; z += v.z; return *this; }
-    inline V3& operator-=(const V3& v) { x -= v.x; y -= v.y; z -= v.z; return *this; }
-    inline V3& operator*=(T d)         { x *= d;   y *= d;   z *= d;   return *this; }
-    inline V3& operator/=(T d)         { x /= d;   y /= d;   z /= d;   return *this; }
+    template <typename SELF> constexpr SELF operator-(this const SELF&                  rhs) { return {       - rhs.x,       - rhs.y,       - rhs.z }; }
+    template <typename SELF> constexpr SELF operator+(this const SELF& lhs, const SELF& rhs) { return { lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z }; }
+    template <typename SELF> constexpr SELF operator-(this const SELF& lhs, const SELF& rhs) { return { lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z }; }
+    template <typename SELF> constexpr SELF operator*(this const SELF& lhs, T           rhs) { return { lhs.x * rhs  , lhs.y * rhs  , lhs.z * rhs   }; }
+    template <typename SELF> constexpr SELF operator/(this const SELF& lhs, T           rhs) { return { lhs.x / rhs  , lhs.y / rhs  , lhs.z / rhs   }; }
+    template <typename SELF> constexpr SELF& operator+=(this SELF& lhs, const SELF& rhs) { lhs.x += rhs.x; lhs.y += rhs.y; lhs.z += rhs.z; return lhs; }
+    template <typename SELF> constexpr SELF& operator-=(this SELF& lhs, const SELF& rhs) { lhs.x -= rhs.x; lhs.y -= rhs.y; lhs.z -= rhs.z; return lhs; }
+    template <typename SELF> constexpr SELF& operator*=(this SELF& lhs, T           rhs) { lhs.x *= rhs  ; lhs.y *= rhs  ; lhs.z *= rhs  ; return lhs; }
+    template <typename SELF> constexpr SELF& operator/=(this SELF& lhs, T           rhs) { lhs.x /= rhs  ; lhs.y /= rhs  ; lhs.z /= rhs  ; return lhs; }
 
-    inline T    dot(const V3& v) const { return x*v.x + y*v.y + z*v.z;                           }
-    inline V3 cross(const V3& v) const { return { y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x }; }
-
-    inline T magnitudeSqr() const { return this->dot(*this);    }
-    inline T    magnitude() const { return std::hypot(x, y, z); }
-    inline V3  normalized() const { return *this / magnitude(); }
-
-    inline bool equals(const V3& v, T epsilon = T(1.0e-6)) const {
-        return std::fabs(x - v.x) < epsilon &&
-               std::fabs(y - v.y) < epsilon &&
-               std::fabs(z - v.z) < epsilon;
+    template <typename SELF> constexpr T    dot(this const SELF& lhs, const SELF& rhs) { return lhs.x*rhs.x + lhs.y*rhs.y + lhs.z*rhs.z; }
+    template <typename SELF> constexpr SELF cross(this const SELF& lhs, const SELF& rhs) {
+        return { lhs.y*rhs.z - lhs.z*rhs.y,
+                 lhs.z*rhs.x - lhs.x*rhs.z,
+                 lhs.x*rhs.y - lhs.y*rhs.x };
     }
-    inline bool operator==(const V3& v) const { return equals(v); }
 
-    inline T max() const { return std::max({ x, y, z }); }
+    constexpr T magnitudeSqr(this const auto& self) { return self.dot(self); }
+    constexpr T    magnitude(this const auto& self) { return std::hypot(self.x, self.y, self.z); }
+    constexpr T          max(this const auto& self) { return std::max({ self.x, self.y, self.z }); }
+
+    template <typename SELF> constexpr SELF normalized(this const SELF& self) { return self / self.magnitude(); }
+
+    template <typename SELF> constexpr bool equals(this const SELF& lhs, const SELF& rhs, T epsilon = T(1.0e-6)) {
+        return std::fabs(lhs.x - rhs.x) < epsilon
+            && std::fabs(lhs.y - rhs.y) < epsilon
+            && std::fabs(lhs.z - rhs.z) < epsilon;
+    }
+    template <typename SELF> constexpr bool operator==(this const SELF& lhs, const SELF& rhs) { return lhs.equals(rhs); }
 };
 
-template <typename T>
-V3<T> operator*(const T& lhs, const V3<T>& rhs) {
+template <typename T, template<typename> typename TYPE>// requires(TYPE<T>::x && TYPE<T>::y && TYPE<T>::z)
+TYPE<T> operator*(const T& lhs, const TYPE<T>& rhs) {
     return { lhs * rhs.x, lhs * rhs.y, lhs * rhs.z };
 }
 
@@ -104,9 +108,8 @@ using f32v3 = V3<float>;
 using i32v3 = V3<int32_t>;
 
 
-class fColor : public f32v3 {
-    static float toUnorm(int32_t from);
-    static int32_t toInt(float from);
+struct fColor : public f32v3 {
+    //fColor(const char* desc);
 
     friend std::istream& operator>>(std::istream& is, fColor& v);
     friend std::ostream& operator<<(std::ostream& os, const fColor& v);
@@ -116,6 +119,7 @@ class fColor : public f32v3 {
 struct ControlPoint {
     f32v2 p;
     fColor l = { 0.3, 0.3, 0.3 }, r = { 0.7, 0.7, 0.7 };
+    //fColor l = { "#4c4c4c" }, r = { "#B3B3B3" };
 
     ControlPoint   operator+(const ControlPoint& o) const;
     ControlPoint   operator-(const ControlPoint& o) const;
@@ -129,7 +133,7 @@ struct ControlPoint {
 
     float dot(const ControlPoint& o) const;
 
-    void draw(int32_t selected) const;
+    void draw(bool onSelectedCurve, bool selectedPoint) const;
 
     ControlPoint leftside(const ControlPoint& o) const;
     ControlPoint rightside(const ControlPoint& o) const;

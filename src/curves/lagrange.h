@@ -13,5 +13,5 @@ public:
     virtual const char* getName() const override;
 
 protected:
-    virtual std::vector<ControlPoint> generateInterpolated() const override;
+    virtual std::vector<ControlPoint> evaluateCurve() const override;
 };

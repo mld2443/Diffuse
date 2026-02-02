@@ -15,7 +15,7 @@ LagrangeCurve::LagrangeCurve(std::istream& is)
 
 const char* LagrangeCurve::getName() const { return name; }
 
-std::vector<ControlPoint> LagrangeCurve::generateInterpolated() const {
+std::vector<ControlPoint> LagrangeCurve::evaluateCurve() const {
     auto knots = generateKnots();
 
     std::vector<ControlPoint> interpolated;

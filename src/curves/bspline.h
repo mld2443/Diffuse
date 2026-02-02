@@ -15,7 +15,7 @@ public:
 protected:
     virtual bool canIncDegree() const override;
 
-    virtual std::vector<ControlPoint> generateInterpolated() const override;
+    virtual std::vector<ControlPoint> evaluateCurve() const override;
 
 private:
     ControlPoint deboor(std::size_t d, std::size_t begin, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& memo) const;
