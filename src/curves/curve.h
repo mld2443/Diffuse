@@ -3,9 +3,11 @@
 #include "../point.h"
 
 #include <vector>
-#include <map>
 
 
+/////////////////////
+// MARK: BaseCurve //
+/////////////////////
 class BaseCurve {
     friend std::ostream& operator<<(std::ostream& os, const BaseCurve& c);
 
@@ -16,8 +18,10 @@ public:
     virtual const char* getName() const =0;
 
     std::vector<ControlPoint>& getControlPoints();
-    virtual std::size_t getDegree() const =0;
     std::size_t getFidelity() const;
+
+    // provided by locality type
+    virtual std::size_t getDegree() const =0;
 
     void setFidelity(std::size_t fidelity);
 
@@ -26,26 +30,41 @@ public:
 protected:
     BaseCurve(std::vector<ControlPoint>&& controlPoints);
 
-    virtual std::vector<ControlPoint> evaluateCurve() const =0;
+    std::vector<ControlPoint> evaluateCurve() const;
+
+    // provided by parameterization
+    virtual std::pair<float, float> getDomain() const =0;
+    virtual std::vector<float> generateKnots() const =0;
+
+    // provided by locality type
+    virtual ControlPoint evaluatePoint(const std::vector<float>& knots, float t) const =0;
+
+    // provided by interpolation type
+    virtual std::vector<ControlPoint> evaluateLayer(const std::vector<ControlPoint>& points, const std::vector<float>& knots, float t) const =0;
 
 protected:
     std::vector<ControlPoint> m_controlPoints;
+
+private:
     std::size_t m_fidelity;
 };
 
 
-/////////////////
-// GlobalCurve //
-/////////////////
+///////////////////////
+// MARK: GlobalCurve //
+///////////////////////
 class GlobalCurve : virtual public BaseCurve {
-protected:
+public:
     virtual std::size_t getDegree() const override;
+
+protected:
+    virtual ControlPoint evaluatePoint(const std::vector<float>& knots, float t) const override;
 };
 
 
-/////////////////
-// SplineCurve //
-/////////////////
+///////////////////////
+// MARK: SplineCurve //
+///////////////////////
 class SplineCurve : virtual public BaseCurve {
 public:
     virtual std::size_t getDegree() const override;
@@ -60,24 +79,17 @@ protected:
     SplineCurve(std::size_t degree);
     SplineCurve(std::istream& is);
 
+    virtual ControlPoint evaluatePoint(const std::vector<float>& knots, float t) const override;
+
 private:
     std::size_t m_degree;
 };
 
 
-/////////////////
-// Approximant //
-/////////////////
-class Approximant : virtual public BaseCurve {
-protected:
-    ControlPoint decasteljau(const std::vector<ControlPoint>& points, float t) const;
-};
-
-
-/////////////////
-// Interpolant //
-/////////////////
-class Interpolant : virtual public BaseCurve {
+/////////////////////////
+// MARK: Parameterized //
+/////////////////////////
+class Parameterized : virtual public BaseCurve {
 public:
     float getParam() const;
 
@@ -85,15 +97,30 @@ public:
     void paramDec();
 
 protected:
-    Interpolant(float parameterization);
-    Interpolant(std::istream& is);
+    Parameterized(float parameterization);
+    Parameterized(std::istream& is);
 
-    std::vector<float> generateKnots() const;
-
-    ControlPoint neville(std::size_t degree, std::size_t index, const std::vector<float>& knots, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& hash) const;
-    ControlPoint neville2(const std::vector<ControlPoint>& points, const std::vector<float>& knots, float t) const;
-
+    virtual std::pair<float, float> getDomain() const override;
+    virtual std::vector<float> generateKnots() const override;
 
 private:
     float m_parameterization;
+};
+
+
+///////////////////////
+// MARK: Approximant //
+///////////////////////
+class Approximant : virtual public BaseCurve {
+protected:
+    virtual std::vector<ControlPoint> evaluateLayer(const std::vector<ControlPoint>& points, const std::vector<float>& knots, float t) const override;
+};
+
+
+///////////////////////
+// MARK: Interpolant //
+///////////////////////
+class Interpolant : virtual public BaseCurve {
+protected:
+    virtual std::vector<ControlPoint> evaluateLayer(const std::vector<ControlPoint>& points, const std::vector<float>& knots, float t) const override;
 };

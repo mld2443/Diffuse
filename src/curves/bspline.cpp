@@ -4,43 +4,37 @@
 BSplineCurve::BSplineCurve(std::vector<ControlPoint>&& controlPoints)
   : BaseCurve(std::move(controlPoints))
   , SplineCurve(2uz)
+  , Parameterized(0.0f)
   , Approximant()
 {}
 
 BSplineCurve::BSplineCurve(std::istream& is)
   : BaseCurve(is)
   , SplineCurve(is)
+  , Parameterized(is)
   , Approximant()
 {}
 
-const char* BSplineCurve::getName() const { return name; }
+const char* BSplineCurve::getName() const { return NAME; }
 
 bool BSplineCurve::canIncDegree() const {
     return getDegree() + 1uz < m_controlPoints.size();
 }
 
-std::vector<ControlPoint> BSplineCurve::evaluateCurve() const {
-    std::vector<ControlPoint> interpolated;
-    for (uint32_t piece = 0; piece < m_controlPoints.size() - getDegree(); piece++)
-        for (float t = 0; t < m_fidelity; t++)
-            interpolated.push_back(deboor(piece, ((float)t / (float)m_fidelity) + piece + getDegree() - 1));
-
-    return interpolated;
-}
-
-ControlPoint BSplineCurve::deboor(std::size_t d, std::size_t begin, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& memo) const {
-    if (d == 0)
+ControlPoint BSplineCurve::deboor(float begin, float degree, float t) const {
+    if (degree == 0.0f)
         return m_controlPoints[begin];
 
-    auto key = std::pair(d, begin);
-    if (auto hashed = memo.find(key); hashed != memo.end())
-        return hashed->second;
-
-    return memo[key] = ((deboor(d - 1, begin, t, memo) * (begin + getDegree() - t)) +
-                        (deboor(d - 1, begin + 1, t, memo) * (t - (d + begin - 1)))) / d;
+    return ((deboor(begin       , degree - 1.0f, t) * (begin + getDegree() - t  ))
+          + (deboor(begin + 1.0f, degree - 1.0f, t) * (t - degree - begin + 1.0f)))
+         / degree;
 }
 
-ControlPoint BSplineCurve::deboor(std::size_t piece, float t) const {
-    std::map<std::pair<std::size_t, std::size_t>, ControlPoint> memo;
-    return deboor(getDegree(), piece, t, memo);
+std::vector<ControlPoint> BSplineCurve::evaluateCurve() const {
+    std::vector<ControlPoint> interpolated;
+    for (std::size_t piece = 0uz; piece < m_controlPoints.size() - getDegree(); ++piece)
+        for (float t = 0.0f; t < 50.0f; t += 1.0f)
+            interpolated.push_back(deboor(piece, getDegree(), (t / 50.0f) + static_cast<float>(piece + getDegree() - 1uz)));
+
+    return interpolated;
 }

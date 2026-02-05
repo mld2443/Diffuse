@@ -4,52 +4,56 @@
 CatmullRomCurve::CatmullRomCurve(std::vector<ControlPoint>&& controlPoints)
   : BaseCurve(std::move(controlPoints))
   , SplineCurve(2uz)
-  , Interpolant(0.0)
+  , Parameterized(0.0f)
+  , Interpolant()
+  , m_nevilleSteps(1uz)
 {}
 
 CatmullRomCurve::CatmullRomCurve(std::istream& is)
   : BaseCurve(is)
   , SplineCurve(is)
-  , Interpolant(is)
+  , Parameterized(0.0f)
+  , Interpolant()
+  , m_nevilleSteps(1uz)
 {}
 
-const char* CatmullRomCurve::getName() const { return name; }
+const char* CatmullRomCurve::getName() const { return NAME; }
 
 bool CatmullRomCurve::canIncDegree() const {
     return getDegree() < m_controlPoints.size() / 2uz;
 }
 
-std::vector<ControlPoint> CatmullRomCurve::evaluateCurve() const {
-    auto knots = generateKnots();
-
-    std::vector<ControlPoint> interpolated;
-    std::size_t begin = 0uz;
-    for (std::size_t piece = getDegree() - 1uz; piece < m_controlPoints.size() - getDegree(); ++piece, ++begin)
-        for (std::size_t t = (knots[piece] * (float)m_fidelity); (float)t < knots[piece + 1uz] * (float)m_fidelity; ++t)
-            interpolated.push_back(deboor(knots, begin, (float)t/(float)m_fidelity));
-    interpolated.push_back(m_controlPoints[begin + getDegree() - 1uz]);
-
-    return interpolated;
-}
-
-ControlPoint CatmullRomCurve::deboor(std::size_t d, std::size_t begin, const std::vector<float>& knots, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& memo) const {
-    auto key = std::pair(d + getDegree(), begin);
-    if (auto hashed = memo.find(key); hashed != memo.end())
-        return hashed->second;
-
-    if (d == 1u)
-        return memo[key] =
-            ((neville(getDegree() - 1, begin, knots, t, memo) * (knots[begin + getDegree()] - t)) +
-             (neville(getDegree() - 1, begin + 1, knots, t, memo) * (t - knots[d + begin - 1]))) /
-            (knots[begin + getDegree()] - knots[d + begin - 1]);
-
-    return memo[key] =
-        ((deboor(d - 1, begin, knots, t, memo) * (knots[begin + getDegree()] - t)) +
-         (deboor(d - 1, begin + 1, knots, t, memo) * (t - knots[d + begin - 1]))) /
-        (knots[begin + getDegree()] - knots[d + begin - 1]);
-}
-
-ControlPoint CatmullRomCurve::deboor(const std::vector<float>& knots, std::size_t piece, float t) const {
-    std::map<std::pair<std::size_t, std::size_t>, ControlPoint> memo;
-    return deboor(getDegree(), piece, knots, t, memo);
-}
+// ControlPoint CatmullRomCurve::neville(std::size_t index, std::size_t degree, const std::vector<float>& knots, float t) const {
+//     if (degree == 0uz)
+//         return m_controlPoints[index];
+// 
+//     const float t_l = knots[index], t_r = knots[index + degree];
+//     return ((t_r - t  ) * neville(index      , degree - 1uz, knots, t)
+//           + (t   - t_l) * neville(index + 1uz, degree - 1uz, knots, t))
+//          / (t_r - t_l);
+// }
+// 
+// ControlPoint CatmullRomCurve::deboor(std::size_t index, std::size_t degree, const std::vector<float>& knots, float t) const {
+//     if (degree <= m_nevilleSteps)
+//         return ((neville(index      , getDegree() - 1uz, knots, t) * (knots[index + getDegree()] - t ))
+//               + (neville(index + 1uz, getDegree() - 1uz, knots, t) * (t - knots[degree + index - 1uz])))
+//              / (knots[index + getDegree()] - knots[index + degree - 1uz]);
+// 
+//     return ((deboor(index      , degree - 1uz, knots, t) * (knots[index + getDegree()] - t ))
+//           + (deboor(index + 1uz, degree - 1uz, knots, t) * (t - knots[degree + index - 1uz])))
+//          / (knots[index + getDegree()] - knots[degree + index - 1uz]);
+// }
+// 
+// std::vector<ControlPoint> CatmullRomCurve::evaluateCurve() const {
+//     auto knots = generateKnots();
+// 
+//     std::vector<ControlPoint> interpolated;
+// 
+//     for (std::size_t piece = getDegree() - 1uz; piece < m_controlPoints.size() - getDegree(); ++piece)
+//         for (float t = knots[piece] * 50.0f; t < knots[piece + 1uz] * 50.0f; t += 1.0f)
+//             interpolated.push_back(deboor(index, getDegree(), knots, t/50.0f));
+// 
+//     interpolated.push_back(m_controlPoints[m_controlPoints.size() - getDegree()]);
+// 
+//     return interpolated;
+// }

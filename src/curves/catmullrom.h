@@ -3,9 +3,9 @@
 #include "curve.h"
 
 
-class CatmullRomCurve : public SplineCurve, public Interpolant {
+class CatmullRomCurve : public SplineCurve, public Parameterized, public Interpolant {
 public:
-    static constexpr const char* name = "catmullrom";
+    static constexpr const char* NAME = "catmullrom";
 
     CatmullRomCurve(std::vector<ControlPoint>&& controlPoints);
     CatmullRomCurve(std::istream& is);
@@ -15,9 +15,6 @@ public:
 protected:
     virtual bool canIncDegree() const override;
 
-    virtual std::vector<ControlPoint> evaluateCurve() const override;
-
 private:
-    ControlPoint deboor(std::size_t d, std::size_t begin, const std::vector<float>& knots, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& memo) const;
-    ControlPoint deboor(const std::vector<float>& knots, std::size_t piece, float t) const;
+    std::size_t m_nevilleSteps;
 };

@@ -13,7 +13,7 @@ BezierCurve::BezierCurve(std::istream& is)
   , Approximant()
 {}
 
-const char* BezierCurve::getName() const { return name; }
+const char* BezierCurve::getName() const { return NAME; }
 
 void BezierCurve::elevateDegree() {
     std::vector<ControlPoint> newpts;
@@ -25,12 +25,4 @@ void BezierCurve::elevateDegree() {
 
     m_controlPoints.clear();
     m_controlPoints = newpts;
-}
-
-std::vector<ControlPoint> BezierCurve::evaluateCurve() const {
-    std::vector<ControlPoint> interpolated;
-    for (std::size_t t = 0uz; t <= m_fidelity; ++t)
-        interpolated.push_back(decasteljau(m_controlPoints, static_cast<float>(t)/static_cast<float>(m_fidelity)));
-
-    return interpolated;
 }

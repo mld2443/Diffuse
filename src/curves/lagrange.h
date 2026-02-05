@@ -3,15 +3,12 @@
 #include "curve.h"
 
 
-class LagrangeCurve : public GlobalCurve, public Interpolant {
+class LagrangeCurve : public GlobalCurve, public Parameterized, public Interpolant {
 public:
-    static constexpr const char* name = "lagrange";
+    static constexpr const char* NAME = "lagrange";
 
     LagrangeCurve(std::vector<ControlPoint>&& controlPoints);
     LagrangeCurve(std::istream& is);
 
     virtual const char* getName() const override;
-
-protected:
-    virtual std::vector<ControlPoint> evaluateCurve() const override;
 };
