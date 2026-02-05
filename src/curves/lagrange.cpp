@@ -21,7 +21,7 @@ std::vector<ControlPoint> LagrangeCurve::evaluateCurve() const {
     std::vector<ControlPoint> interpolated;
     interpolated.reserve(static_cast<std::size_t>(static_cast<float>(m_fidelity) * knots.back()));
     for (float t = 0.0f; t <= static_cast<float>(m_fidelity) * knots.back(); t += 1.0f)
-        interpolated.push_back(neville2(m_controlPoints, knots, t/static_cast<float>(m_fidelity)));
+        interpolated.push_back(neville(m_controlPoints, knots, t/static_cast<float>(m_fidelity)));
 
     return interpolated;
 }

@@ -3,7 +3,6 @@
 #include "../point.h"
 
 #include <vector>
-#include <map>
 
 
 class BaseCurve {
@@ -90,8 +89,7 @@ protected:
 
     std::vector<float> generateKnots() const;
 
-    ControlPoint neville(std::size_t degree, std::size_t index, const std::vector<float>& knots, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& hash) const;
-    ControlPoint neville2(const std::vector<ControlPoint>& points, const std::vector<float>& knots, float t) const;
+    ControlPoint neville(const std::vector<ControlPoint>& points, const std::vector<float>& knots, float t) const;
 
 
 private:

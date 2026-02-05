@@ -179,21 +179,7 @@ std::vector<float> Interpolant::generateKnots() const {
     return knots;
 }
 
-ControlPoint Interpolant::neville(std::size_t degree, std::size_t index, const std::vector<float>& knots, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& memo) const {
-    if (degree == 0uz)
-        return m_controlPoints[index];
-
-    auto key = std::pair(degree, index);
-    if (auto cached = memo.find(key); cached != memo.end())
-        return cached->second;
-
-    const float t_l = knots[index], t_r = knots[index + degree];
-    return memo[key] = ((t_r - t  ) * neville(degree - 1uz, index      , knots, t, memo)
-                     +  (t   - t_l) * neville(degree - 1uz, index + 1uz, knots, t, memo))
-                     /  (t_r - t_l);
-}
-
-ControlPoint Interpolant::neville2(const std::vector<ControlPoint>& lowerDegree, const std::vector<float>& knots, float t) const {
+ControlPoint Interpolant::neville(const std::vector<ControlPoint>& lowerDegree, const std::vector<float>& knots, float t) const {
     const std::size_t degree = knots.size() - lowerDegree.size() + 1uz;
 
     std::vector<ControlPoint> higherDegree;
@@ -211,7 +197,7 @@ ControlPoint Interpolant::neville2(const std::vector<ControlPoint>& lowerDegree,
     if (higherDegree.size() == 1uz)
         return higherDegree.front();
 
-    return neville2(higherDegree, knots, t);
+    return neville(higherDegree, knots, t);
 }
 
 

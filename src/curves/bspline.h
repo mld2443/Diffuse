@@ -1,6 +1,7 @@
 #pragma once
 
 #include "curve.h"
+#include <map>
 
 
 class BSplineCurve : public SplineCurve, public Approximant {
