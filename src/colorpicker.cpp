@@ -15,7 +15,17 @@ extern BaseCurve *g_selected;
 namespace {
     bool g_mouseLeftDown;
 
-    int g_selected_color;
+    enum class ColorSelect {
+        L_RED,
+        R_RED,
+        L_GRN,
+        R_GRN,
+        L_BLU,
+        R_BLU,
+        NONE
+    };
+
+    ColorSelect g_selected_color = ColorSelect::NONE;
 }
 
 
@@ -124,7 +134,7 @@ void ColorPicker::displayCurveColors() {
                     glVertex2i(lPos + 14, i * 25 + 3);
                     glVertex2i(lPos + 10, i * 25 + 10);
 
-                    const int rPos = (int)((&p.l.x)[i] * 255.0f);
+                    const int rPos = (int)((&p.r.x)[i] * 255.0f);
                     glVertex2i(rPos + 10, i * 25 + 20);
                     glVertex2i(rPos + 14, i * 25 + 27);
                     glVertex2i(rPos + 6, i * 25 + 27);
@@ -147,17 +157,12 @@ void ColorPicker::mouseCurveColors(int button, int state, int x, int y) {
                     if (x > 73 && x < 80) {
                         if (y > 5 && y < 16) {
                             spline->incDegree();
+                            glutPostWindowRedisplay(g_diffuseWindow);
                             glutPostRedisplay();
-                            glutSetWindow(g_diffuseWindow);
-                            glutPostRedisplay();
-                            glutSetWindow(g_colorPickerHandle);
-                        }
-                        else if (y > 16 && y < 26) {
+                        } else if (y > 16 && y < 26) {
                             spline->decDegree();
+                            glutPostWindowRedisplay(g_diffuseWindow);
                             glutPostRedisplay();
-                            glutSetWindow(g_diffuseWindow);
-                            glutPostRedisplay();
-                            glutSetWindow(g_colorPickerHandle);
                         }
                     }
                 }
@@ -166,9 +171,7 @@ void ColorPicker::mouseCurveColors(int button, int state, int x, int y) {
                         if (y > 10 && y < 20) {
                             bezier->elevateDegree();
                             glutReshapeWindow(321, glutGet(GLUT_WINDOW_HEIGHT) + 85);
-                            glutSetWindow(g_diffuseWindow);
-                            glutPostRedisplay();
-                            glutSetWindow(g_colorPickerHandle);
+                            glutPostWindowRedisplay(g_diffuseWindow);
                         }
                     }
                 }
@@ -176,39 +179,33 @@ void ColorPicker::mouseCurveColors(int button, int state, int x, int y) {
                     if (x > 289 && x < 300) {
                         if (y > 5 && y < 16) {
                             interp->paramInc();
+                            glutPostWindowRedisplay(g_diffuseWindow);
                             glutPostRedisplay();
-                            glutSetWindow(g_diffuseWindow);
-                            glutPostRedisplay();
-                            glutSetWindow(g_colorPickerHandle);
-                        }
-                        else if (y > 16 && y < 26) {
+                        } else if (y > 16 && y < 26) {
                             interp->paramDec();
+                            glutPostWindowRedisplay(g_diffuseWindow);
                             glutPostRedisplay();
-                            glutSetWindow(g_diffuseWindow);
-                            glutPostRedisplay();
-                            glutSetWindow(g_colorPickerHandle);
                         }
                     }
                 }
-            }
-            else {
-                ::g_selected_color = 0;
+            } else {
+                ::g_selected_color = ColorSelect::NONE;
                 auto it = ::g_selected->getControlPoints().begin();
-                for (int i = BCOLOR_BUFFER; i < glutGet(GLUT_WINDOW_HEIGHT) && ::g_selected_color == 0; i += 85, it++) {
+                for (int i = BCOLOR_BUFFER; i < glutGet(GLUT_WINDOW_HEIGHT) && ::g_selected_color == ColorSelect::NONE; i += 85, it++) {
                     if (y-i-3 > 0 && y-i-3 < 8 && abs(x - 10 - (int)(255.0f * it->l.x)) < 5)
-                        ::g_selected_color = 1;
+                        ::g_selected_color = ColorSelect::L_RED;
                     else if (y-i-20 > 0 && y-i-20 < 8 && abs(x - 10 - (int)(255.0f * it->r.x)) < 5)
-                        ::g_selected_color = 2;
+                        ::g_selected_color = ColorSelect::R_RED;
                     else if (y-i-28 > 0 && y-i-28 < 8 && abs(x - 10 - (int)(255.0f * it->l.y)) < 5)
-                        ::g_selected_color = 3;
+                        ::g_selected_color = ColorSelect::L_GRN;
                     else if (y-i-45 > 0 && y-i-45 < 8 && abs(x - 10 - (int)(255.0f * it->r.y)) < 5)
-                        ::g_selected_color = 4;
+                        ::g_selected_color = ColorSelect::R_GRN;
                     else if (y-i-53 > 0 && y-i-53 < 8 && abs(x - 10 - (int)(255.0f * it->l.z)) < 5)
-                        ::g_selected_color = 5;
+                        ::g_selected_color = ColorSelect::L_BLU;
                     else if (y-i-70 > 0 && y-i-70 < 8 && abs(x - 10 - (int)(255.0f * it->r.z)) < 5)
-                        ::g_selected_color = 6;
+                        ::g_selected_color = ColorSelect::R_BLU;
                 }
-                if (::g_selected_color)
+                if (::g_selected_color != ColorSelect::NONE)
                     ::g_coloring = &*(--it);
             }
         }
@@ -276,19 +273,19 @@ void ColorPicker::mousePointColor(int button, int state, int x, int y) {
     if (button == GLUT_LEFT_BUTTON) {
         ::g_mouseLeftDown = state == GLUT_DOWN;
         if (::g_mouseLeftDown) {
-            ::g_selected_color = 0;
+            ::g_selected_color = ColorSelect::NONE;
             if (y-13 > 0 && y-13 < 8 && abs(x - 10 - (int)(255.0f * ::g_coloring->l.x)) < 5)
-                ::g_selected_color = 1;
+                ::g_selected_color = ColorSelect::L_RED;
             else if (y-35 > 0 && y-35 < 8 && abs(x - 10 - (int)(255.0f * ::g_coloring->r.x)) < 5)
-                ::g_selected_color = 2;
+                ::g_selected_color = ColorSelect::R_RED;
             else if (y-58 > 0 && y-58 < 8 && abs(x - 10 - (int)(255.0f * ::g_coloring->l.y)) < 5)
-                ::g_selected_color = 3;
+                ::g_selected_color = ColorSelect::L_GRN;
             else if (y-80 > 0 && y-80 < 8 && abs(x - 10 - (int)(255.0f * ::g_coloring->r.y)) < 5)
-                ::g_selected_color = 4;
+                ::g_selected_color = ColorSelect::R_GRN;
             else if (y-103 > 0 && y-103 < 8 && abs(x - 10 - (int)(255.0f * ::g_coloring->l.z)) < 5)
-                ::g_selected_color = 5;
+                ::g_selected_color = ColorSelect::L_BLU;
             else if (y-125 > 0 && y-125 < 8 && abs(x - 10 - (int)(255.0f * ::g_coloring->r.z)) < 5)
-                ::g_selected_color = 6;
+                ::g_selected_color = ColorSelect::R_BLU;
         }
     }
 }
@@ -301,11 +298,15 @@ void ColorPicker::reshape(int w, int h) {
     glMatrixMode(GL_MODELVIEW);
 }
 
-//void key(unsigned char c, int x, int y);
-
-void ColorPicker::key(unsigned char c, int x, int y) {
+void ColorPicker::key(unsigned char c, int, int) {
     switch(c) {
         case 13: //return
+            break;
+
+        case 8: // delete
+            break;
+
+        case 27: //escape
             ::g_coloring = nullptr;
             ::g_selected = nullptr;
             glutDestroyWindow(g_colorPickerHandle);
@@ -313,45 +314,23 @@ void ColorPicker::key(unsigned char c, int x, int y) {
             glutSetWindow(g_diffuseWindow);
             glutPostRedisplay();
             break;
-
-        case 8:
-            break;
-
-        case 27: //escape
-            glutDestroyWindow(g_colorPickerHandle);
-            glutDestroyWindow(g_diffuseWindow);
-            exit(0);
-            break;
     }
 }
 
 void ColorPicker::motion(int x, int y) {
-    if (::g_selected_color && ::g_mouseLeftDown) {
+    if (::g_mouseLeftDown) {
         const float setting = (x < 265 ? ((x > 10) ? (float)(x-10) : 0.0f) : 255.0f) / 255.0f;
         switch (::g_selected_color) {
-            case 1:
-                ::g_coloring->l.x = setting;
-                break;
-            case 2:
-                ::g_coloring->r.x = setting;
-                break;
-            case 3:
-                ::g_coloring->l.y = setting;
-                break;
-            case 4:
-                ::g_coloring->r.y = setting;
-                break;
-            case 5:
-                ::g_coloring->l.z = setting;
-                break;
-            case 6:
-                ::g_coloring->r.z = setting;
-                break;
+            case ColorSelect::L_RED: ::g_coloring->l.x = setting; break;
+            case ColorSelect::L_GRN: ::g_coloring->l.y = setting; break;
+            case ColorSelect::L_BLU: ::g_coloring->l.z = setting; break;
+            case ColorSelect::R_RED: ::g_coloring->r.x = setting; break;
+            case ColorSelect::R_GRN: ::g_coloring->r.y = setting; break;
+            case ColorSelect::R_BLU: ::g_coloring->r.z = setting; break;
+            default: return;
         }
 
+        glutPostWindowRedisplay(g_diffuseWindow);
         glutPostRedisplay();
-        glutSetWindow(::g_diffuseWindow);
-        glutPostRedisplay();
-        glutSetWindow(::g_colorPickerHandle);
     }
 }
