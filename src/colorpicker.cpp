@@ -74,15 +74,15 @@ void ColorPicker::displayCurveColors() {
 
     if (Interpolant* interp = dynamic_cast<Interpolant*>(::g_selected)) {
         glColor3ubv(available);
-        text(230, 18, GLUT_BITMAP_HELVETICA_10, "PARAM:{:3}", interp->getParam());
+        text(230, 18, GLUT_BITMAP_HELVETICA_10, "PARAM:{:+3}", interp->getParam());
         glBegin(GL_LINES); {
-            glColor3ubv(interp->getParam() < 1.5f ? available : disabled);
+            glColor3ubv(interp->canIncParam() ? available : disabled);
             glVertex2i(295, 6);
             glVertex2i(295, 15);
             glVertex2i(290, 10);
             glVertex2i(299, 10);
 
-            glColor3ubv(interp->getParam() > 0.0f ? available : disabled);
+            glColor3ubv(interp->canDecParam() ? available : disabled);
             glVertex2i(290, 21);
             glVertex2i(299, 21);
         } glEnd();
@@ -154,37 +154,44 @@ void ColorPicker::mouseCurveColors(int button, int state, int x, int y) {
         if (::g_mouseLeftDown) {
             if (y < BCOLOR_BUFFER) {
                 if (SplineCurve* spline = dynamic_cast<SplineCurve*>(::g_selected)) {
-                    if (x > 73 && x < 80) {
+                    if (x > 69 && x < 80) {
                         if (y > 5 && y < 16) {
                             spline->incDegree();
                             glutPostWindowRedisplay(g_diffuseWindow);
                             glutPostRedisplay();
-                        } else if (y > 16 && y < 26) {
+                            return;
+                        } else if (y > 16 && y < 27) {
                             spline->decDegree();
                             glutPostWindowRedisplay(g_diffuseWindow);
                             glutPostRedisplay();
+                            return;
                         }
                     }
                 }
+
                 if (BezierCurve* bezier = dynamic_cast<BezierCurve*>(::g_selected)) {
                     if (x > 109 && x < 202) {
                         if (y > 10 && y < 20) {
                             bezier->elevateDegree();
                             glutReshapeWindow(321, glutGet(GLUT_WINDOW_HEIGHT) + 85);
                             glutPostWindowRedisplay(g_diffuseWindow);
+                            return;
                         }
                     }
                 }
+
                 if (Interpolant* interp = dynamic_cast<Interpolant*>(::g_selected)) {
                     if (x > 289 && x < 300) {
                         if (y > 5 && y < 16) {
                             interp->paramInc();
                             glutPostWindowRedisplay(g_diffuseWindow);
                             glutPostRedisplay();
-                        } else if (y > 16 && y < 26) {
+                            return;
+                        } else if (y > 16 && y < 27) {
                             interp->paramDec();
                             glutPostWindowRedisplay(g_diffuseWindow);
                             glutPostRedisplay();
+                            return;
                         }
                     }
                 }

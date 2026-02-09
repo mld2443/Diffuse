@@ -91,6 +91,10 @@ std::size_t SplineCurve::getDegree() const {
     return m_degree;
 }
 
+bool SplineCurve::canIncDegree() const {
+    return m_degree + 1uz < m_controlPoints.size();
+}
+
 bool SplineCurve::canDecDegree() const {
     return m_degree > 1uz;
 }
@@ -139,13 +143,21 @@ float Interpolant::getParam() const {
     return m_parameterization;
 }
 
+bool Interpolant::canIncParam() const {
+    return m_parameterization < 1.5f;
+}
+
+bool Interpolant::canDecParam() const {
+    return m_parameterization > -1.5f;
+}
+
 void Interpolant::paramInc() {
-    if (m_parameterization < 1.5f)
+    if (canIncParam())
         m_parameterization += 0.5f;
 }
 
 void Interpolant::paramDec() {
-    if (m_parameterization > 0.0f)
+    if (canDecParam())
         m_parameterization -= 0.5f;
 }
 

@@ -49,17 +49,16 @@ class SplineCurve : virtual public BaseCurve {
 public:
     virtual std::size_t getDegree() const override;
 
-    virtual bool canIncDegree() const =0;
+    bool canIncDegree() const;
     bool canDecDegree() const;
 
-    void incDegree();
-    void decDegree();
+    virtual void incDegree();
+    virtual void decDegree();
 
 protected:
     SplineCurve(std::size_t degree);
     SplineCurve(std::istream& is);
 
-private:
     std::size_t m_degree;
 };
 
@@ -79,6 +78,9 @@ protected:
 class Interpolant : virtual public BaseCurve {
 public:
     float getParam() const;
+
+    bool canIncParam() const;
+    bool canDecParam() const;
 
     void paramInc();
     void paramDec();

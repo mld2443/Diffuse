@@ -1,6 +1,7 @@
 #pragma once
 
 #include "curve.h"
+
 #include <map>
 
 
@@ -14,8 +15,6 @@ public:
     virtual const char* getName() const override;
 
 protected:
-    virtual bool canIncDegree() const override;
-
     virtual std::vector<ControlPoint> evaluateCurve() const override;
 
 private:

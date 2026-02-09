@@ -42,14 +42,14 @@ void display() {
     for (const auto &curve : ::g_curves)
         curve->draw(!::g_drawImage, curve.get() == ::g_selected, ::g_coloring);
 
-    if (g_drawImage) {
+    if (::g_drawImage) {
         glFlush();
 
         std::vector<RGB<GLfloat>> rawPixels(::WINDOW_SIZE * ::WINDOW_SIZE);
 
         glReadPixels(0, 0, ::WINDOW_SIZE, ::WINDOW_SIZE, GL_RGB, GL_FLOAT, rawPixels.data());
 
-        rawPixels = pyramidDiffusion(Image<GLfloat>(rawPixels, ::WINDOW_SIZE, ::WINDOW_SIZE), ::g_smoothness).convertToRGB();
+        rawPixels = ::pyramidDiffusion(Image<GLfloat>(rawPixels, ::WINDOW_SIZE, ::WINDOW_SIZE), ::g_smoothness).convertToRGB();
 
         glDrawPixels(::WINDOW_SIZE, ::WINDOW_SIZE, GL_RGB, GL_FLOAT, rawPixels.data());
         glFlush();
@@ -75,7 +75,7 @@ void init() {
     glLoadIdentity();
 }
 
-void close_color_window(const bool condition) {
+void closeColorWindow(const bool condition) {
     if (condition) {
         glutDestroyWindow(::g_colorPickerHandle);
         ::g_colorPickerHandle = 0;
@@ -198,8 +198,8 @@ void reshape(int w, int h) {
     glMatrixMode(GL_MODELVIEW);
 }
 
-void save_file() {
-    close_color_window(::g_coloring);
+void saveFile() {
+    ::closeColorWindow(::g_coloring);
 
     std::string filename;
     std::cout << "save file: ";
@@ -218,8 +218,8 @@ void save_file() {
     file.close();
 }
 
-void load_file() {
-    close_color_window(::g_coloring);
+void loadFile() {
+    ::closeColorWindow(::g_coloring);
 
     std::string filename;
     std::cout << "load file: ";
@@ -265,12 +265,12 @@ void key(unsigned char c, int x, int y) {
         case 13: //return
             break;
 
-        case 8: //delete
+        case 8: //delete/backspace
             if (!::g_drawImage && ::g_selected) {
-                close_color_window(::g_coloring);
+                ::closeColorWindow(::g_coloring);
 
                 auto it = ::g_curves.begin();
-                for (; it->get() != ::g_selected && it != ::g_curves.end(); it++);
+                for (; it->get() != ::g_selected && it != ::g_curves.end(); ++it);
                 ::g_curves.erase(it);
                 ::g_selected = nullptr;
                 glutSetWindow(::g_diffuseWindow);
@@ -278,12 +278,12 @@ void key(unsigned char c, int x, int y) {
             }
             break;
 
-        case 127: //backspace
-            if (!::g_drawImage && ::g_moving){
-                close_color_window(::g_moving == ::g_coloring);
+        case 127: //backspace/delete
+            if (!::g_drawImage && ::g_moving) {
+                ::closeColorWindow(::g_moving == ::g_coloring);
 
                 auto it = ::g_points.begin();
-                for (; &(*it) != ::g_moving && it != ::g_points.end(); it++);
+                for (; &(*it) != ::g_moving && it != ::g_points.end(); ++it);
                 ::g_points.erase(it);
                 ::g_moving = nullptr;
                 glutPostRedisplay();
@@ -296,28 +296,28 @@ void key(unsigned char c, int x, int y) {
             break;
 
         case '-':
-            if (::g_drawImage && ::g_smoothness > 25) {
+            if (::g_drawImage && ::g_smoothness > 25uz) {
                 ::g_smoothness -= 25;
                 glutPostRedisplay();
             }
             break;
 
         case '=':
-            if (::g_drawImage && ::g_smoothness < 100) {
+            if (::g_drawImage && ::g_smoothness < 100uz) {
                 ::g_smoothness += 25;
                 glutPostRedisplay();
             }
             break;
 
         case '_':
-            if (::g_drawImage && ::g_iterations > 4) {
+            if (::g_drawImage && ::g_iterations > 4uz) {
                 ::g_iterations /= 2;
                 glutPostRedisplay();
             }
             break;
 
         case '+':
-            if (::g_drawImage && ::g_iterations < 512) {
+            if (::g_drawImage && ::g_iterations < 512uz) {
                 ::g_iterations *= 2;
                 glutPostRedisplay();
             }
@@ -325,19 +325,19 @@ void key(unsigned char c, int x, int y) {
 
         { case 's':
             if (!::g_drawImage && ::g_curves.size())
-                save_file();
+                ::saveFile();
             break;
 
         case 'l':
             if (!::g_drawImage) {
-                load_file();
+                ::loadFile();
                 glutPostRedisplay();
             }
             break; }
 
         { case '1':
             if (!::g_drawImage && ::g_points.size() > 1uz) {
-                close_color_window(::g_coloring);
+                ::closeColorWindow(::g_coloring);
                 ::g_curves.push_back(std::make_unique<LagrangeCurve>(std::move(::g_points)));
                 ::g_points.clear();
                 glutPostRedisplay();
@@ -346,7 +346,7 @@ void key(unsigned char c, int x, int y) {
 
         case '2':
             if (!::g_drawImage && ::g_points.size() > 1uz) {
-                close_color_window(::g_coloring);
+                ::closeColorWindow(::g_coloring);
                 ::g_curves.push_back(std::make_unique<BezierCurve>(std::move(::g_points)));
                 ::g_points.clear();
                 glutPostRedisplay();
@@ -355,7 +355,7 @@ void key(unsigned char c, int x, int y) {
 
         case '3':
             if (!::g_drawImage && ::g_points.size() > 1uz) {
-                close_color_window(::g_coloring);
+                ::closeColorWindow(::g_coloring);
                 ::g_curves.push_back(std::make_unique<BSplineCurve>(std::move(::g_points)));
                 ::g_points.clear();
                 glutPostRedisplay();
@@ -364,7 +364,7 @@ void key(unsigned char c, int x, int y) {
 
         case '4':
             if (!::g_drawImage && ::g_points.size() > 1uz) {
-                close_color_window(::g_coloring);
+                ::closeColorWindow(::g_coloring);
                 ::g_curves.push_back(std::make_unique<CatmullRomCurve>(std::move(::g_points)));
                 ::g_points.clear();
                 glutPostRedisplay();
@@ -388,11 +388,11 @@ int main(int argc, char** argv) {
     glutInitWindowPosition(::WINDOW_OFFX, ::WINDOW_OFFY);
     ::g_diffuseWindow = glutCreateWindow("Diffusion Curves");
     ::init();
-    glutReshapeFunc (reshape);
-    glutDisplayFunc(display);
-    glutMouseFunc(mouse);
-    glutMotionFunc(motion);
-    glutKeyboardFunc(key);
+    glutReshapeFunc(::reshape);
+    glutDisplayFunc(::display);
+    glutMouseFunc(::mouse);
+    glutMotionFunc(::motion);
+    glutKeyboardFunc(::key);
     glutMainLoop();
     return 0;
 }
