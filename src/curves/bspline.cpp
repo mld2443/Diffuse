@@ -3,13 +3,13 @@
 
 BSplineCurve::BSplineCurve(std::vector<ControlPoint>&& controlPoints)
   : BaseCurve(std::move(controlPoints))
-  , SplineCurve(2uz)
+  , SplineCurve(2uz, 1uz)
   , Approximant()
 {}
 
 BSplineCurve::BSplineCurve(std::istream& is)
   : BaseCurve(is)
-  , SplineCurve(is)
+  , SplineCurve(is, 1uz)
   , Approximant()
 {}
 

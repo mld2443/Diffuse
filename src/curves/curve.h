@@ -52,14 +52,16 @@ public:
     bool canIncDegree() const;
     bool canDecDegree() const;
 
-    virtual void incDegree();
-    virtual void decDegree();
+    void incDegree();
+    void decDegree();
 
 protected:
-    SplineCurve(std::size_t degree);
-    SplineCurve(std::istream& is);
+    SplineCurve(std::size_t degree, std::size_t increment);
+    SplineCurve(std::istream& is, std::size_t increment);
 
+private:
     std::size_t m_degree;
+    const std::size_t m_increment;
 };
 
 

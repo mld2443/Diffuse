@@ -92,28 +92,31 @@ std::size_t SplineCurve::getDegree() const {
 }
 
 bool SplineCurve::canIncDegree() const {
-    return m_degree + 1uz < m_controlPoints.size();
+    return m_degree + m_increment < m_controlPoints.size();
 }
 
 bool SplineCurve::canDecDegree() const {
-    return m_degree > 1uz;
+    return m_degree > m_increment;
 }
 
 void SplineCurve::incDegree() {
     if (canIncDegree())
-        ++m_degree;
+        m_degree += m_increment;
 }
 
 void SplineCurve::decDegree() {
     if (canDecDegree())
-        --m_degree;
+        m_degree -= m_increment;
 }
 
-SplineCurve::SplineCurve(std::size_t degree)
+SplineCurve::SplineCurve(std::size_t degree, std::size_t increment)
   : m_degree(degree)
+  , m_increment(increment)
 {}
 
-SplineCurve::SplineCurve(std::istream& is) {
+SplineCurve::SplineCurve(std::istream& is, std::size_t increment)
+  : m_increment(increment)
+{
     is >> m_degree;
 }
 
