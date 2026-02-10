@@ -32,15 +32,15 @@ namespace {
 
 int g_diffuseWindow = 0, g_colorPickerHandle = 0;
 
-ControlPoint *g_coloring = nullptr;
-BaseCurve *g_selected = nullptr;
+ControlPoint *g_selectedPoint = nullptr;
+BaseCurve *g_selectedCurve = nullptr;
 
 
 void display() {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
     for (const auto &curve : ::g_curves)
-        curve->draw(!::g_drawImage, curve.get() == ::g_selected, ::g_coloring);
+        curve->draw(!::g_drawImage, curve.get() == ::g_selectedCurve, ::g_selectedPoint);
 
     if (::g_drawImage) {
         glFlush();
@@ -55,7 +55,7 @@ void display() {
         glFlush();
     } else {
         for (const auto &p : ::g_points)
-            p.draw(&p == ::g_moving, &p == ::g_coloring);
+            p.draw(&p == ::g_moving, &p == ::g_selectedPoint);
 
         glFlush();
     }
@@ -79,7 +79,7 @@ void closeColorWindow(const bool condition) {
     if (condition) {
         glutDestroyWindow(::g_colorPickerHandle);
         ::g_colorPickerHandle = 0;
-        ::g_coloring = nullptr;
+        ::g_selectedPoint = nullptr;
     }
 }
 
@@ -114,8 +114,8 @@ void mouse(int button, int state, int x, int y) {
 
             if (!g_drawImage) {
                 if (::g_mouseRightDown) {
-                    ::g_coloring = nullptr;
-                    ::g_selected = nullptr;
+                    ::g_selectedPoint = nullptr;
+                    ::g_selectedCurve = nullptr;
                     if (::g_colorPickerHandle) {
                         glutDestroyWindow(::g_colorPickerHandle);
                         ::g_colorPickerHandle = 0;
@@ -123,12 +123,12 @@ void mouse(int button, int state, int x, int y) {
 
                     for (auto &p : ::g_points)
                         if (p.clicked(clickPos))
-                            ::g_coloring = &p;
+                            ::g_selectedPoint = &p;
 
-                    if (g_coloring) {
+                    if (g_selectedPoint) {
                         glutInitWindowSize(276, 276);
-                        glutInitWindowPosition(::WINDOW_OFFX + ::WINDOW_SIZE + 10, ::WINDOW_OFFY + 50);
-                        ::g_colorPickerHandle = glutCreateWindow("Select point color");
+                        glutInitWindowPosition(glutGet(GLUT_WINDOW_X) + glutGet(GLUT_WINDOW_WIDTH) + 10, glutGet(GLUT_WINDOW_Y));
+                        ::g_colorPickerHandle = glutCreateWindow("Point colors");
                         glutDisplayFunc(ColorPicker::displayPointColor);
                         glutMouseFunc(ColorPicker::mousePointColor);
                         glutMotionFunc(ColorPicker::motion);
@@ -139,28 +139,28 @@ void mouse(int button, int state, int x, int y) {
                         for (auto& curve : ::g_curves)
                             for (auto &p : curve->getControlPoints())
                                 if (p.clicked(clickPos)) {
-                                    ::g_coloring = &p;
-                                    ::g_selected = curve.get();
+                                    ::g_selectedPoint = &p;
+                                    ::g_selectedCurve = curve.get();
                                 }
 
-                        if (::g_selected) {
+                        if (::g_selectedCurve) {
                             if (::g_colorPickerHandle) {
                                 glutDestroyWindow(::g_colorPickerHandle);
                                 ::g_colorPickerHandle = 0;
                             }
 
                             const char* title = nullptr;
-                            if (dynamic_cast<BezierCurve*>(::g_selected))
+                            if (dynamic_cast<BezierCurve*>(::g_selectedCurve))
                                 title = "Bezier Curve";
-                            else if (dynamic_cast<LagrangeCurve*>(::g_selected))
+                            else if (dynamic_cast<LagrangeCurve*>(::g_selectedCurve))
                                 title = "Lagrange Curve";
-                            else if (dynamic_cast<BSplineCurve*>(::g_selected))
+                            else if (dynamic_cast<BSplineCurve*>(::g_selectedCurve))
                                 title = "B-Spline Curve";
-                            else if (dynamic_cast<CatmullRomCurve*>(::g_selected))
+                            else if (dynamic_cast<CatmullRomCurve*>(::g_selectedCurve))
                                 title = "Catmull-Rom Curve";
 
-                            glutInitWindowSize(321, 5uz + ColorPicker::BCOLOR_BUFFER + 85uz * ::g_selected->getControlPoints().size());
-                            glutInitWindowPosition(::WINDOW_OFFX + ::WINDOW_SIZE + 10uz, ::WINDOW_OFFY);
+                            glutInitWindowSize(321, 5uz + ColorPicker::BCOLOR_BUFFER + 85uz * ::g_selectedCurve->getControlPoints().size());
+                            glutInitWindowPosition(glutGet(GLUT_WINDOW_X) + glutGet(GLUT_WINDOW_WIDTH) + 10, glutGet(GLUT_WINDOW_Y));
                             ::g_colorPickerHandle = glutCreateWindow(title);
                             glutDisplayFunc(ColorPicker::displayCurveColors);
                             glutMouseFunc(ColorPicker::mouseCurveColors);
@@ -199,7 +199,7 @@ void reshape(int w, int h) {
 }
 
 void saveFile() {
-    ::closeColorWindow(::g_coloring);
+    ::closeColorWindow(::g_selectedPoint);
 
     std::string filename;
     std::cout << "save file: ";
@@ -219,7 +219,7 @@ void saveFile() {
 }
 
 void loadFile() {
-    ::closeColorWindow(::g_coloring);
+    ::closeColorWindow(::g_selectedPoint);
 
     std::string filename;
     std::cout << "load file: ";
@@ -266,13 +266,13 @@ void key(unsigned char c, int x, int y) {
             break;
 
         case 8: //delete/backspace
-            if (!::g_drawImage && ::g_selected) {
-                ::closeColorWindow(::g_coloring);
+            if (!::g_drawImage && ::g_selectedCurve) {
+                ::closeColorWindow(::g_selectedPoint);
 
                 auto it = ::g_curves.begin();
-                for (; it->get() != ::g_selected && it != ::g_curves.end(); ++it);
+                for (; it->get() != ::g_selectedCurve && it != ::g_curves.end(); ++it);
                 ::g_curves.erase(it);
-                ::g_selected = nullptr;
+                ::g_selectedCurve = nullptr;
                 glutSetWindow(::g_diffuseWindow);
                 glutPostRedisplay();
             }
@@ -280,7 +280,7 @@ void key(unsigned char c, int x, int y) {
 
         case 127: //backspace/delete
             if (!::g_drawImage && ::g_moving) {
-                ::closeColorWindow(::g_moving == ::g_coloring);
+                ::closeColorWindow(::g_moving == ::g_selectedPoint);
 
                 auto it = ::g_points.begin();
                 for (; &(*it) != ::g_moving && it != ::g_points.end(); ++it);
@@ -337,7 +337,7 @@ void key(unsigned char c, int x, int y) {
 
         { case '1':
             if (!::g_drawImage && ::g_points.size() > 1uz) {
-                ::closeColorWindow(::g_coloring);
+                ::closeColorWindow(::g_selectedPoint);
                 ::g_curves.push_back(std::make_unique<LagrangeCurve>(std::move(::g_points)));
                 ::g_points.clear();
                 glutPostRedisplay();
@@ -346,7 +346,7 @@ void key(unsigned char c, int x, int y) {
 
         case '2':
             if (!::g_drawImage && ::g_points.size() > 1uz) {
-                ::closeColorWindow(::g_coloring);
+                ::closeColorWindow(::g_selectedPoint);
                 ::g_curves.push_back(std::make_unique<BezierCurve>(std::move(::g_points)));
                 ::g_points.clear();
                 glutPostRedisplay();
@@ -355,7 +355,7 @@ void key(unsigned char c, int x, int y) {
 
         case '3':
             if (!::g_drawImage && ::g_points.size() > 1uz) {
-                ::closeColorWindow(::g_coloring);
+                ::closeColorWindow(::g_selectedPoint);
                 ::g_curves.push_back(std::make_unique<BSplineCurve>(std::move(::g_points)));
                 ::g_points.clear();
                 glutPostRedisplay();
@@ -364,7 +364,7 @@ void key(unsigned char c, int x, int y) {
 
         case '4':
             if (!::g_drawImage && ::g_points.size() > 1uz) {
-                ::closeColorWindow(::g_coloring);
+                ::closeColorWindow(::g_selectedPoint);
                 ::g_curves.push_back(std::make_unique<CatmullRomCurve>(std::move(::g_points)));
                 ::g_points.clear();
                 glutPostRedisplay();
