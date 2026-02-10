@@ -25,6 +25,8 @@ public:
 protected:
     BaseCurve(std::vector<ControlPoint>&& controlPoints);
 
+    std::size_t getSegmentCount() const;
+
     virtual std::vector<ControlPoint> evaluateCurve() const =0;
 
 protected:

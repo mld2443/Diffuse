@@ -76,6 +76,11 @@ BaseCurve::BaseCurve(std::vector<ControlPoint>&& controlPoints)
   , m_fidelity(50uz)
 {}
 
+std::size_t BaseCurve::getSegmentCount() const {
+    return m_controlPoints.size() - getDegree();
+}
+
+
 ///////////////////////
 // MARK: GlobalCurve //
 ///////////////////////

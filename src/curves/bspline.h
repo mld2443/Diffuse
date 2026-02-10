@@ -2,7 +2,7 @@
 
 #include "curve.h"
 
-#include <map>
+#include <span>
 
 
 class BSplineCurve : public SplineCurve, public Approximant {
@@ -18,6 +18,7 @@ protected:
     virtual std::vector<ControlPoint> evaluateCurve() const override;
 
 private:
-    ControlPoint deboor(std::size_t d, std::size_t begin, float t, std::map<std::pair<std::size_t, std::size_t>, ControlPoint>& memo) const;
-    ControlPoint deboor(std::size_t piece, float t) const;
+    std::vector<ControlPoint> deboorLayer(const std::span<const ControlPoint>& lowerDegree, const std::span<const float>& knots, float t) const;
+
+    ControlPoint evaluatePoint(const std::span<const float>& knots, float t) const;
 };
