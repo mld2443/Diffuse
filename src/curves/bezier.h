@@ -15,6 +15,6 @@ public:
     void elevateDegree();
 
 protected:
-    virtual util::Range<float> getDomain() const override;
+    virtual util::Range<std::size_t> getDomainIndices() const override;
     virtual std::vector<float> generateKnots() const override;
 };

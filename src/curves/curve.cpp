@@ -103,7 +103,8 @@ std::vector<ControlPoint> BaseCurve::evaluateCurve() const {
     std::vector<ControlPoint> smoothCurve;
     smoothCurve.reserve(m_fidelity + 1uz);
 
-    const auto domain = getDomain();
+    const util::Range indices = getDomainIndices();
+    const util::Range domain{knots[indices.lower], knots[indices.upper]};
     const util::Range steps{0uz, m_fidelity};
 
     for (std::size_t t = steps.lower; t <= steps.upper; ++t)
@@ -152,16 +153,13 @@ std::vector<float> Parameterized::generateKnots() const {
 
     auto transformAndCumulativeSum = [&](auto& range, float sum = 0.0f) {
         return std::views::adjacent_transform<2uz>(range, [&, sum](auto& c0, auto& c1) mutable {
-            sum += std::pow((c0.p - c1.p).magnitude(), m_parameterization);
+            sum += std::pow((c0.p - c1.p).magnitudeSqr(), m_parameterization * 0.5f);
             return sum;
         });
     };
 
     knots.push_back(0.0f);
-    //knots.append_range(transformAndCumulativeSum(m_controlPoints));
-
-    for (const auto& knot : transformAndCumulativeSum(m_controlPoints))
-        knots.push_back(knot);
+    knots.append_range(transformAndCumulativeSum(m_controlPoints));
 
     const float normalize = static_cast<float>(knots.size() - 1uz)/knots.back();
     for (auto &knot : knots)

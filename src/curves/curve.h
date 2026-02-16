@@ -35,7 +35,7 @@ protected:
     std::size_t getSegmentCount() const;
 
     // provided by parameterization
-    virtual util::Range<float> getDomain() const =0;
+    virtual util::Range<std::size_t> getDomainIndices() const =0;
     virtual std::vector<float> generateKnots() const =0;
 
     // provided by locality type
@@ -72,7 +72,7 @@ protected:
     Parameterized(float parameterization);
     Parameterized(std::istream& is);
 
-    // virtual util::Range<float> getDomain() const override;
+    // virtual util::Range<std::size_t> getDomainIndices() const override;
     virtual std::vector<float> generateKnots() const override;
 
 private:

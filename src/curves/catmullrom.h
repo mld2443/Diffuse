@@ -15,7 +15,7 @@ public:
     virtual const char* getName() const override;
 
 protected:
-    virtual util::Range<float> getDomain() const override;
+    virtual util::Range<std::size_t> getDomainIndices() const override;
     virtual std::vector<float> generateKnots() const override;
 
 private:

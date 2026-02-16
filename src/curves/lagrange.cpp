@@ -17,6 +17,6 @@ LagrangeCurve::LagrangeCurve(std::istream& is)
 
 const char* LagrangeCurve::getName() const { return NAME; }
 
-util::Range<float> LagrangeCurve::getDomain() const {
-    return {0.0f, 1.0f};
+util::Range<std::size_t> LagrangeCurve::getDomainIndices() const {
+    return {0uz, getDegree()};
 }

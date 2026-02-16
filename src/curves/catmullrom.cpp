@@ -18,8 +18,8 @@ CatmullRomCurve::CatmullRomCurve(std::istream& is)
 
 const char* CatmullRomCurve::getName() const { return NAME; }
 
-util::Range<float> CatmullRomCurve::getDomain() const {
-    return {0.0f, 1.0f};
+util::Range<std::size_t> CatmullRomCurve::getDomainIndices() const {
+    return {deboorDegree(), m_controlPoints.size() - nevilleDegree()};
 }
 
 std::vector<float> CatmullRomCurve::generateKnots() const {
@@ -34,7 +34,7 @@ std::vector<float> CatmullRomCurve::generateKnots() const {
 //     const std::size_t nevilleSteps = nevilleDegree();
 //     const std::size_t deboorSteps = deboorDegree();
 // 
-//     auto bounds = util::Range(knots[deboorSteps], knots[knots.size() - nevilleSteps]);
+//     auto bounds = util::Range(knots[deboorSteps], knots[m_controlPoints.size() - nevilleSteps]);
 // 
 //     for (std::size_t t = 0uz; t <= m_fidelity; ++t) {
 //         const float normalized = static_cast<float>(t)/static_cast<float>(m_fidelity);

@@ -20,12 +20,12 @@ BSplineCurve::BSplineCurve(std::istream& is)
 
 const char* BSplineCurve::getName() const { return NAME; }
 
-util::Range<float> BSplineCurve::getDomain() const {
-    return {0.0f, 1.0f};
+util::Range<std::size_t> BSplineCurve::getDomainIndices() const {
+    return {getDegree() - 1uz, m_controlPoints.size() - 1uz};
 }
 
 std::vector<float> BSplineCurve::generateKnots() const {
-    return {};
+    return {std::from_range, std::ranges::iota_view(0uz, m_controlPoints.size() + getDegree() - 1uz)};
 }
 
 // std::vector<ControlPoint> BSplineCurve::evaluateCurve() const {

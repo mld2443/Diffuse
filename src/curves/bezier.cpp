@@ -33,10 +33,10 @@ void BezierCurve::elevateDegree() {
     m_controlPoints = std::move(newpts);
 }
 
-util::Range<float> BezierCurve::getDomain() const {
-    return {0.0f, 1.0f};
+util::Range<std::size_t> BezierCurve::getDomainIndices() const {
+    return {0uz, 1uz};
 }
 
 std::vector<float> BezierCurve::generateKnots() const {
-    return {};
+    return {0.0f, 1.0f};
 }
