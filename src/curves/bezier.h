@@ -5,7 +5,7 @@
 
 class BezierCurve : public GlobalCurve, public Approximant {
 public:
-    static constexpr const char* name = "bezier";
+    static constexpr const char* NAME = "bezier";
 
     BezierCurve(std::vector<ControlPoint>&& controlPoints);
     BezierCurve(std::istream& is);
@@ -15,5 +15,6 @@ public:
     void elevateDegree();
 
 protected:
-    virtual std::vector<ControlPoint> evaluateCurve() const override;
+    virtual util::Range<float> getDomain() const override;
+    virtual std::vector<float> generateKnots() const override;
 };

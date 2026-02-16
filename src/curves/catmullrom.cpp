@@ -1,38 +1,48 @@
 #include "catmullrom.h"
-#include "../util/common.h"
+// #include "../util/common.h"
 
 
 CatmullRomCurve::CatmullRomCurve(std::vector<ControlPoint>&& controlPoints)
   : BaseCurve(std::move(controlPoints))
   , SplineCurve(3uz, 2uz)
-  , Interpolant(0.0)
+  , Parameterized(0.0f)
+  , Interpolant()
 {}
 
 CatmullRomCurve::CatmullRomCurve(std::istream& is)
   : BaseCurve(is)
   , SplineCurve(is, 2uz)
-  , Interpolant(is)
+  , Parameterized(is)
+  , Interpolant()
 {}
 
-const char* CatmullRomCurve::getName() const { return name; }
+const char* CatmullRomCurve::getName() const { return NAME; }
 
-std::vector<ControlPoint> CatmullRomCurve::evaluateCurve() const {
-    const std::vector<float> knots{generateKnots()};
-    std::vector<ControlPoint> smoothCurve;
-    smoothCurve.reserve(m_fidelity + 1uz);
-
-    const std::size_t nevilleSteps = nevilleDegree();
-    const std::size_t deboorSteps = deboorDegree();
-
-    auto bounds = util::Range(knots[deboorSteps], knots[knots.size() - nevilleSteps]);
-
-    for (std::size_t t = 0uz; t <= m_fidelity; ++t) {
-        const float normalized = static_cast<float>(t)/static_cast<float>(m_fidelity);
-        smoothCurve.push_back(evaluatePoint(knots, bounds.lerp(normalized)));
-    }
-
-    return smoothCurve;
+util::Range<float> CatmullRomCurve::getDomain() const {
+    return {0.0f, 1.0f};
 }
+
+std::vector<float> CatmullRomCurve::generateKnots() const {
+    return {};
+}
+
+// std::vector<ControlPoint> CatmullRomCurve::evaluateCurve() const {
+//     const std::vector<float> knots{generateKnots()};
+//     std::vector<ControlPoint> smoothCurve;
+//     smoothCurve.reserve(m_fidelity + 1uz);
+// 
+//     const std::size_t nevilleSteps = nevilleDegree();
+//     const std::size_t deboorSteps = deboorDegree();
+// 
+//     auto bounds = util::Range(knots[deboorSteps], knots[knots.size() - nevilleSteps]);
+// 
+//     for (std::size_t t = 0uz; t <= m_fidelity; ++t) {
+//         const float normalized = static_cast<float>(t)/static_cast<float>(m_fidelity);
+//         smoothCurve.push_back(evaluatePoint(knots, bounds.lerp(normalized)));
+//     }
+// 
+//     return smoothCurve;
+// }
 
 std::size_t CatmullRomCurve::nevilleDegree() const {
     return (getDegree() + 1uz) >> 1uz;
@@ -79,19 +89,19 @@ std::vector<ControlPoint> CatmullRomCurve::deboorLayer(const std::span<const Con
     return higherDegree;
 }
 
-ControlPoint CatmullRomCurve::evaluatePoint(const std::vector<float>& knots, float t) const {
-    const std::size_t nevilleSteps = nevilleDegree();
-    const std::size_t start = std::min(getSegmentCount(), util::findIndexbetweenRanges(t, knots) - nevilleSteps);
-
-    // collect relevant subset of points and knots
-    auto layer = std::ranges::to<std::vector<ControlPoint>>(std::ranges::views::counted(m_controlPoints.begin() + start, getDegree() + 1uz));
-    const auto knotsView = std::ranges::views::counted(knots.begin() + start, getDegree() + 1uz);
-
-    while (layer.size() > nevilleSteps)
-        layer = nevilleLayer(layer, knotsView, t);
-
-    while (layer.size() > 1uz)
-        layer = deboorLayer(layer, knotsView, t);
-
-    return layer.front();
-}
+// ControlPoint CatmullRomCurve::evaluatePoint(const std::vector<float>& knots, float t) const {
+//     const std::size_t nevilleSteps = nevilleDegree();
+//     const std::size_t start = std::min(getSegmentCount(), util::findIndexbetweenRanges(t, knots) - nevilleSteps);
+// 
+//     // collect relevant subset of points and knots
+//     auto layer = std::ranges::to<std::vector<ControlPoint>>(std::ranges::views::counted(m_controlPoints.begin() + start, getDegree() + 1uz));
+//     const auto knotsView = std::ranges::views::counted(knots.begin() + start, getDegree() + 1uz);
+// 
+//     while (layer.size() > nevilleSteps)
+//         layer = nevilleLayer(layer, knotsView, t);
+// 
+//     while (layer.size() > 1uz)
+//         layer = deboorLayer(layer, knotsView, t);
+// 
+//     return layer.front();
+// }

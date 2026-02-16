@@ -72,17 +72,17 @@ void ColorPicker::displayCurveColors() {
         text(110, 18, GLUT_BITMAP_HELVETICA_10, "ELEVATE DEGREE");
     }
 
-    if (Interpolant* interp = dynamic_cast<Interpolant*>(::g_selectedCurve)) {
+    if (Parameterized* curve = dynamic_cast<Parameterized*>(::g_selectedCurve)) {
         glColor3ubv(available);
-        text(230, 18, GLUT_BITMAP_HELVETICA_10, "PARAM:{:+3}", interp->getParam());
+        text(230, 18, GLUT_BITMAP_HELVETICA_10, "PARAM:{:3}", curve->getParam());
         glBegin(GL_LINES); {
-            glColor3ubv(interp->canIncParam() ? available : disabled);
+            glColor3ubv(curve->getParam() < 1.5f ? available : disabled);
             glVertex2i(295, 6);
             glVertex2i(295, 15);
             glVertex2i(290, 10);
             glVertex2i(299, 10);
 
-            glColor3ubv(interp->canDecParam() ? available : disabled);
+            glColor3ubv(curve->getParam() > 0.0f ? available : disabled);
             glVertex2i(290, 21);
             glVertex2i(299, 21);
         } glEnd();
@@ -180,15 +180,15 @@ void ColorPicker::mouseCurveColors(int button, int state, int x, int y) {
                     }
                 }
 
-                if (Interpolant* interp = dynamic_cast<Interpolant*>(::g_selectedCurve)) {
+                if (Parameterized* curve = dynamic_cast<Parameterized*>(::g_selectedCurve)) {
                     if (x > 289 && x < 300) {
                         if (y > 5 && y < 16) {
-                            interp->paramInc();
+                            curve->paramInc();
                             glutPostWindowRedisplay(g_diffuseWindow);
                             glutPostRedisplay();
                             return;
                         } else if (y > 16 && y < 27) {
-                            interp->paramDec();
+                            curve->paramDec();
                             glutPostWindowRedisplay(g_diffuseWindow);
                             glutPostRedisplay();
                             return;

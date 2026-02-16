@@ -5,9 +5,9 @@
 #include <span>
 
 
-class CatmullRomCurve : public SplineCurve, public Interpolant {
+class CatmullRomCurve : public SplineCurve, public Parameterized, public Interpolant {
 public:
-    static constexpr const char* name = "catmullrom";
+    static constexpr const char* NAME = "catmullrom";
 
     CatmullRomCurve(std::vector<ControlPoint>&& controlPoints);
     CatmullRomCurve(std::istream& is);
@@ -15,7 +15,8 @@ public:
     virtual const char* getName() const override;
 
 protected:
-    virtual std::vector<ControlPoint> evaluateCurve() const override;
+    virtual util::Range<float> getDomain() const override;
+    virtual std::vector<float> generateKnots() const override;
 
 private:
     std::size_t nevilleDegree() const;
@@ -23,6 +24,4 @@ private:
 
     std::vector<ControlPoint> nevilleLayer(const std::span<const ControlPoint>& lowerDegree, const std::span<const float>& knots, float t) const;
     std::vector<ControlPoint> deboorLayer(const std::span<const ControlPoint>& lowerDegree, const std::span<const float>& knots, float t) const;
-
-    ControlPoint evaluatePoint(const std::vector<float>& knots, float t) const;
 };

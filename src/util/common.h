@@ -1,3 +1,5 @@
+#pragma once
+
 #include <ranges>
 #include <algorithm>
 #include <utility>
@@ -17,6 +19,7 @@ namespace util {
         }
         constexpr inline T clamp(const T& value) const noexcept { return std::clamp<T>(value, lower, upper); }
         constexpr inline T lerp(auto t) const noexcept { return lower + t * (upper - lower); }
+        constexpr inline double unmix(const T& value) const noexcept { return static_cast<double>(value - lower)/static_cast<double>(upper - lower); }
     };
 
     std::size_t findIndexbetweenRanges(auto target, const std::ranges::range auto& sortedRange) {
@@ -24,5 +27,3 @@ namespace util {
         return static_cast<std::size_t>(std::distance(sortedRange.begin(), it));
     }
 }
-
-

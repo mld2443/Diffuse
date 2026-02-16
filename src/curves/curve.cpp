@@ -6,6 +6,24 @@
 #include <ranges>
 
 
+////////////////////////////
+// MARK: Global Functions //
+////////////////////////////
+std::ostream& operator<<(std::ostream& os, const BaseCurve& curve) {
+    os << curve.getName() << ' ' << curve.m_controlPoints.size() << std::endl;
+    for (const auto &point : curve.m_controlPoints)
+        os << point << std::endl;
+    os << curve.getFidelity();
+
+    if (const SplineCurve* spline = dynamic_cast<const SplineCurve*>(&curve))
+        os << ' ' << spline->getDegree();
+    if (const Parameterized* params = dynamic_cast<const Parameterized*>(&curve))
+        os << ' ' << params->getParam();
+
+    return os << std::endl;
+}
+
+
 /////////////////////
 // MARK: BaseCurve //
 /////////////////////
@@ -80,12 +98,93 @@ std::size_t BaseCurve::getSegmentCount() const {
     return m_controlPoints.size() - getDegree();
 }
 
+std::vector<ControlPoint> BaseCurve::evaluateCurve() const {
+    const std::vector<float> knots = generateKnots();
+    std::vector<ControlPoint> smoothCurve;
+    smoothCurve.reserve(m_fidelity + 1uz);
+
+    const auto domain = getDomain();
+    const util::Range steps{0uz, m_fidelity};
+
+    for (std::size_t t = steps.lower; t <= steps.upper; ++t)
+        smoothCurve.push_back(evaluatePoint(knots, domain.lerp(steps.unmix(t))));
+
+    return smoothCurve;
+}
+
+
+/////////////////////////
+// MARK: Parameterized //
+/////////////////////////
+float Parameterized::getParam() const {
+    return m_parameterization;
+}
+
+bool Parameterized::canIncParam() const {
+    return m_parameterization < 1.5f;
+}
+
+bool Parameterized::canDecParam() const {
+    return m_parameterization > -1.5f;
+}
+
+void Parameterized::paramInc() {
+    if (canIncParam())
+        m_parameterization += 0.5f;
+}
+
+void Parameterized::paramDec() {
+    if (canDecParam())
+        m_parameterization -= 0.5f;
+}
+
+Parameterized::Parameterized(float parameterization)
+  : m_parameterization(parameterization)
+{}
+
+Parameterized::Parameterized(std::istream& is) {
+    is >> m_parameterization;
+}
+
+std::vector<float> Parameterized::generateKnots() const {
+    std::vector<float> knots;
+    knots.reserve(m_controlPoints.size());
+
+    auto transformAndCumulativeSum = [&](auto& range, float sum = 0.0f) {
+        return std::views::adjacent_transform<2uz>(range, [&, sum](auto& c0, auto& c1) mutable {
+            sum += std::pow((c0.p - c1.p).magnitude(), m_parameterization);
+            return sum;
+        });
+    };
+
+    knots.push_back(0.0f);
+    //knots.append_range(transformAndCumulativeSum(m_controlPoints));
+
+    for (const auto& knot : transformAndCumulativeSum(m_controlPoints))
+        knots.push_back(knot);
+
+    const float normalize = static_cast<float>(knots.size() - 1uz)/knots.back();
+    for (auto &knot : knots)
+        knot *= normalize;
+
+    return knots;
+}
+
 
 ///////////////////////
 // MARK: GlobalCurve //
 ///////////////////////
 std::size_t GlobalCurve::getDegree() const {
     return m_controlPoints.size() - 1uz;
+}
+
+ControlPoint GlobalCurve::evaluatePoint(const std::vector<float>& knots, float t) const {
+    std::vector<ControlPoint> layer(m_controlPoints);
+
+    while (layer.size() > 1uz)
+        layer = evaluateLayer(layer, knots, t);
+
+    return layer.front();
 }
 
 
@@ -125,115 +224,39 @@ SplineCurve::SplineCurve(std::istream& is, std::size_t increment)
     is >> m_degree;
 }
 
+ControlPoint SplineCurve::evaluatePoint(const std::vector<float>& knots, float t) const {
+    return {};
+}
+
 
 ///////////////////////
 // MARK: Approximant //
 ///////////////////////
-ControlPoint Approximant::decasteljau(const std::vector<ControlPoint>& lowerDegree, float t) const {
-    std::vector<ControlPoint> higherDegree;
-    higherDegree.reserve(lowerDegree.size() - 1uz);
-
-    using namespace std::ranges::views;
-    for (const auto& [left, right] : adjacent<2>(lowerDegree))
-        higherDegree.push_back((1 - t) * left + t * right);
-
-    if (higherDegree.size() == 1uz)
-        return higherDegree.front();
-
-    return decasteljau(higherDegree, t);
+std::vector<ControlPoint> Approximant::evaluateLayer(const std::span<ControlPoint>& lowerDegree, const std::span<const float>&, float t) const {
+    // Single layer of De Casteljau's algorithm
+    return {std::from_range, std::views::adjacent_transform<2uz>(lowerDegree, [&](const auto& l, const auto& r){
+        return util::Range{l, r}.lerp(t);
+    })};
 }
 
 
 ///////////////////////
 // MARK: Interpolant //
 ///////////////////////
-float Interpolant::getParam() const {
-    return m_parameterization;
-}
-
-bool Interpolant::canIncParam() const {
-    return m_parameterization < 1.5f;
-}
-
-bool Interpolant::canDecParam() const {
-    return m_parameterization > -1.5f;
-}
-
-void Interpolant::paramInc() {
-    if (canIncParam())
-        m_parameterization += 0.5f;
-}
-
-void Interpolant::paramDec() {
-    if (canDecParam())
-        m_parameterization -= 0.5f;
-}
-
-Interpolant::Interpolant(float parameterization)
-  : m_parameterization(parameterization)
-{}
-
-Interpolant::Interpolant(std::istream& is) {
-    is >> m_parameterization;
-}
-
-std::vector<float> Interpolant::generateKnots() const {
-    std::vector<float> knots;
-    knots.reserve(m_controlPoints.size());
-
-    auto transformAndCumulativeSum = [&](auto& range, float sum = 0.0f){
-        return std::views::adjacent_transform<2uz>(range, [&, sum](auto& c0, auto& c1) mutable {
-            sum += std::pow((c0.p - c1.p).magnitude(), m_parameterization);
-            return sum;
-        });
-    };
-
-    knots.push_back(0.0f);
-    for (const auto& knot : transformAndCumulativeSum(m_controlPoints))
-        knots.push_back(knot);
-
-    const float normalize = static_cast<float>(knots.size() - 1uz)/knots.back();
-    for (auto &knot : knots)
-        knot *= normalize;
-
-    return knots;
-}
-
-ControlPoint Interpolant::neville(const std::vector<ControlPoint>& lowerDegree, const std::vector<float>& knots, float t) const {
+std::vector<ControlPoint> Interpolant::evaluateLayer(const std::span<ControlPoint>& lowerDegree, const std::span<const float>& knots, float t) const {
+    // Single layer of Neville's algorithm
     const std::size_t degree = knots.size() - lowerDegree.size() + 1uz;
 
     std::vector<ControlPoint> higherDegree;
     higherDegree.reserve(lowerDegree.size() - 1uz);
 
-    using namespace std::ranges::views;
-    for (const auto& [left, right, t_l, t_r] : zip(lowerDegree,
-                                                   drop(lowerDegree, 1uz),
-                                                   knots,
-                                                   drop(knots, degree)))
+    for (const auto& [left, right, t_l, t_r] : std::views::zip(lowerDegree,
+                                                               std::views::drop(lowerDegree, 1uz),
+                                                               knots,
+                                                               std::views::drop(knots, degree)))
         higherDegree.push_back(((t_r - t  ) * left
                               + (t   - t_l) * right)
                               / (t_r - t_l));
 
-    if (higherDegree.size() == 1uz)
-        return higherDegree.front();
-
-    return neville(higherDegree, knots, t);
-}
-
-
-////////////////////////////
-// MARK: Global Functions //
-////////////////////////////
-std::ostream& operator<<(std::ostream& os, const BaseCurve& curve) {
-    os << curve.getName() << ' ' << curve.m_controlPoints.size() << std::endl;
-    for (const auto &point : curve.m_controlPoints)
-        os << point << std::endl;
-    os << curve.getFidelity();
-
-    if (const SplineCurve* spline = dynamic_cast<const SplineCurve*>(&curve))
-        os << ' ' << spline->getDegree();
-    if (const Interpolant* interp = dynamic_cast<const Interpolant*>(&curve))
-        os << ' ' << interp->getParam();
-
-    return os << std::endl;
+    return higherDegree;
 }

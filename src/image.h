@@ -40,14 +40,14 @@ struct RGBA {
 
 template <typename T>
 struct Image {
-    Image(std::size_t width, std::size_t height): m_width(width), m_height(height), pixels(height * width) {}
-    Image(const Image& other): m_width(other.m_width), m_height(other.m_height), pixels(other.pixels) {}
-    Image(Image&& other): m_width(other.m_width), m_height(other.m_height), pixels(std::move(other.pixels)) {}
+    Image(std::size_t width, std::size_t height): m_width(width), m_height(height), m_pixels(height * width) {}
+    Image(const Image& other): m_width(other.m_width), m_height(other.m_height), m_pixels(other.m_pixels) {}
+    Image(Image&& other): m_width(other.m_width), m_height(other.m_height), m_pixels(std::move(other.m_pixels)) {}
 
     Image(const std::vector<RGB<T>>& premultiplied, std::size_t width, std::size_t height)
         : m_width(width)
         , m_height(height)
-        , pixels(std::ranges::to<std::vector<RGBA<T>>>(std::ranges::transform_view(premultiplied, [](const auto& elem){
+        , m_pixels(std::ranges::to<std::vector<RGBA<T>>>(std::ranges::transform_view(premultiplied, [](const RGB<T>& elem){
             return (elem.r == T{0} && elem.g == T{0} && elem.b == T{0}) ? RGBA<T>{} : RGBA<T>{ .rgb = elem, .a = T{1} };
         })))
     {}
@@ -69,13 +69,13 @@ struct Image {
 
     Image& operator=(Image&& rhs) = default;
 
-    decltype(auto) operator[](this auto&& self, std::size_t x, std::size_t y) { return self.pixels[y*self.m_width + x]; }
-    RGBA<T>* getPtr() { return pixels.data(); }
+    decltype(auto) operator[](this auto&& self, std::size_t x, std::size_t y) { return self.m_pixels[y*self.m_width + x]; }
+    RGBA<T>* getPtr() { return m_pixels.data(); }
 
-    std::vector<RGB<T>> convertToRGB() const { return std::ranges::to<std::vector<RGB<T>>>(std::ranges::transform_view(pixels, [](const RGBA<T>& elem){ return elem.rgb; })); }
+    std::vector<RGB<T>> convertToRGB() const { return std::ranges::to<std::vector<RGB<T>>>(std::ranges::transform_view(m_pixels, [](const RGBA<T>& elem){ return elem.rgb; })); }
 
 public:
     const std::size_t m_width, m_height;
 private:
-    std::vector<RGBA<T>> pixels;
+    std::vector<RGBA<T>> m_pixels;
 };

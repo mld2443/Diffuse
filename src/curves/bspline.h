@@ -2,12 +2,10 @@
 
 #include "curve.h"
 
-#include <span>
 
-
-class BSplineCurve : public SplineCurve, public Approximant {
+class BSplineCurve : public SplineCurve, public Parameterized, public Approximant {
 public:
-    static constexpr const char* name = "bspline";
+    static constexpr const char* NAME = "bspline";
 
     BSplineCurve(std::vector<ControlPoint>&& controlPoints);
     BSplineCurve(std::istream& is);
@@ -15,10 +13,6 @@ public:
     virtual const char* getName() const override;
 
 protected:
-    virtual std::vector<ControlPoint> evaluateCurve() const override;
-
-private:
-    std::vector<ControlPoint> deboorLayer(const std::span<const ControlPoint>& lowerDegree, const std::span<const float>& knots, float t) const;
-
-    ControlPoint evaluatePoint(const std::span<const float>& knots, float t) const;
+    virtual util::Range<float> getDomain() const override;
+    virtual std::vector<float> generateKnots() const override;
 };

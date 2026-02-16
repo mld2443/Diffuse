@@ -1,5 +1,7 @@
 #include "bezier.h"
 
+#include <ranges>
+
 
 BezierCurve::BezierCurve(std::vector<ControlPoint>&& controlPoints)
   : BaseCurve(std::move(controlPoints))
@@ -13,24 +15,28 @@ BezierCurve::BezierCurve(std::istream& is)
   , Approximant()
 {}
 
-const char* BezierCurve::getName() const { return name; }
+const char* BezierCurve::getName() const { return NAME; }
 
 void BezierCurve::elevateDegree() {
     std::vector<ControlPoint> newpts;
+    newpts.reserve(m_controlPoints.size() + 1uz);
+
+    const auto normalize = [&](auto i){ return static_cast<float>(i) / static_cast<float>(m_controlPoints.size()); };
 
     newpts.push_back(m_controlPoints.front());
-    for (std::size_t i = 1uz; i < m_controlPoints.size(); ++i)
-        newpts.push_back(m_controlPoints[i] * (1 - ((float)i / (float)(getDegree() + 1))) + m_controlPoints[i - 1] * ((float)i / (float)(getDegree() + 1)));
+    for (const auto& [t, left, right] : std::views::zip(std::views::transform(std::views::iota(1uz), normalize),
+                                                        m_controlPoints,
+                                                        std::views::drop(m_controlPoints, 1uz)))
+        newpts.push_back(right + t * (left - right));
     newpts.push_back(m_controlPoints.back());
 
-    m_controlPoints.clear();
-    m_controlPoints = newpts;
+    m_controlPoints = std::move(newpts);
 }
 
-std::vector<ControlPoint> BezierCurve::evaluateCurve() const {
-    std::vector<ControlPoint> interpolated;
-    for (std::size_t t = 0uz; t <= m_fidelity; ++t)
-        interpolated.push_back(decasteljau(m_controlPoints, static_cast<float>(t)/static_cast<float>(m_fidelity)));
+util::Range<float> BezierCurve::getDomain() const {
+    return {0.0f, 1.0f};
+}
 
-    return interpolated;
+std::vector<float> BezierCurve::generateKnots() const {
+    return {};
 }

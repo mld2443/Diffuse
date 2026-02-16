@@ -235,13 +235,13 @@ void loadFile() {
             std::string type;
             file >> type;
 
-            if (type == LagrangeCurve::name)
-                ::g_curves.push_back(std::make_unique<LagrangeCurve>(file));
-            else if (type == BezierCurve::name)
+            if (type == BezierCurve::NAME)
                 ::g_curves.push_back(std::make_unique<BezierCurve>(file));
-            else if (type == BSplineCurve::name)
+            else if (type == LagrangeCurve::NAME)
+                ::g_curves.push_back(std::make_unique<LagrangeCurve>(file));
+            else if (type == BSplineCurve::NAME)
                 ::g_curves.push_back(std::make_unique<BSplineCurve>(file));
-            else if (type == CatmullRomCurve::name)
+            else if (type == CatmullRomCurve::NAME)
                 ::g_curves.push_back(std::make_unique<CatmullRomCurve>(file));
             else
                 std::println("file error: invalid type");
@@ -323,7 +323,7 @@ void key(unsigned char c, int x, int y) {
             }
             break;
 
-        { case 's':
+        case 's':
             if (!::g_drawImage && ::g_curves.size())
                 ::saveFile();
             break;
@@ -333,12 +333,12 @@ void key(unsigned char c, int x, int y) {
                 ::loadFile();
                 glutPostRedisplay();
             }
-            break; }
+            break;
 
-        { case '1':
+        case '1':
             if (!::g_drawImage && ::g_points.size() > 1uz) {
                 ::closeColorWindow(::g_selectedPoint);
-                ::g_curves.push_back(std::make_unique<LagrangeCurve>(std::move(::g_points)));
+                ::g_curves.push_back(std::make_unique<BezierCurve>(std::move(::g_points)));
                 ::g_points.clear();
                 glutPostRedisplay();
             }
@@ -347,7 +347,7 @@ void key(unsigned char c, int x, int y) {
         case '2':
             if (!::g_drawImage && ::g_points.size() > 1uz) {
                 ::closeColorWindow(::g_selectedPoint);
-                ::g_curves.push_back(std::make_unique<BezierCurve>(std::move(::g_points)));
+                ::g_curves.push_back(std::make_unique<LagrangeCurve>(std::move(::g_points)));
                 ::g_points.clear();
                 glutPostRedisplay();
             }
@@ -369,7 +369,7 @@ void key(unsigned char c, int x, int y) {
                 ::g_points.clear();
                 glutPostRedisplay();
             }
-            break; }
+            break;
 
         case 27: //escape
             glutDestroyWindow(::g_diffuseWindow);
