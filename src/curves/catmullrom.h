@@ -16,12 +16,13 @@ public:
 
 protected:
     virtual util::Range<std::size_t> getDomainIndices() const override;
-    virtual std::vector<float> generateKnots() const override;
+
+    virtual KnotLayerBounds getKnotLayerBounds() const override;
 
 private:
     std::size_t nevilleDegree() const;
     std::size_t deboorDegree() const;
 
-    std::vector<ControlPoint> nevilleLayer(const std::span<const ControlPoint>& lowerDegree, const std::span<const float>& knots, float t) const;
-    std::vector<ControlPoint> deboorLayer(const std::span<const ControlPoint>& lowerDegree, const std::span<const float>& knots, float t) const;
+    std::vector<ControlPoint> nevilleLayer(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>& knots) const;
+    std::vector<ControlPoint> deboorLayer(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>& knots) const;
 };

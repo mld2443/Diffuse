@@ -1,4 +1,5 @@
 #include "bezier.h"
+#include "../util/common.h"
 
 #include <ranges>
 
@@ -21,13 +22,11 @@ void BezierCurve::elevateDegree() {
     std::vector<ControlPoint> newpts;
     newpts.reserve(m_controlPoints.size() + 1uz);
 
-    const auto normalize = [&](auto i){ return static_cast<float>(i) / static_cast<float>(m_controlPoints.size()); };
-
     newpts.push_back(m_controlPoints.front());
-    for (const auto& [t, left, right] : std::views::zip(std::views::transform(std::views::iota(1uz), normalize),
-                                                        m_controlPoints,
-                                                        std::views::drop(m_controlPoints, 1uz)))
-        newpts.push_back(right + t * (left - right));
+    newpts.append_range(std::views::zip_transform([&](std::size_t i, const ControlPoint& left, const ControlPoint& right) {
+        const float t = static_cast<float>(i) / static_cast<float>(m_controlPoints.size());
+        return right + t * (left - right);
+    }, std::views::iota(1uz), m_controlPoints, std::views::drop(m_controlPoints, 1uz)));
     newpts.push_back(m_controlPoints.back());
 
     m_controlPoints = std::move(newpts);

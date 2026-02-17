@@ -32,17 +32,19 @@ public:
 protected:
     BaseCurve(std::vector<ControlPoint>&& controlPoints);
 
-    std::size_t getSegmentCount() const;
+    [[deprecated]] std::size_t getSegmentCount() const;
+
+    static std::vector<ControlPoint> evaluateGenericLayer(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>& knots, std::size_t leftOffset, std::size_t rightOffset);
 
     // provided by parameterization
     virtual util::Range<std::size_t> getDomainIndices() const =0;
     virtual std::vector<float> generateKnots() const =0;
 
     // provided by locality type
-    virtual ControlPoint evaluatePoint(const std::vector<float>& knots, float t) const =0;
+    virtual ControlPoint evaluatePoint(float t, const std::vector<float>& knots) const =0;
 
     // provided by interpolation type
-    virtual std::vector<ControlPoint> evaluateLayer(const std::span<ControlPoint>& points, const std::span<const float>& knots, float t) const =0;
+    virtual std::vector<ControlPoint> evaluateLayer(const std::span<const ControlPoint>& points, float t, const std::span<const float>& knots) const =0;
 
 private:
     std::vector<ControlPoint> evaluateCurve() const;
@@ -85,10 +87,10 @@ private:
 ///////////////////////
 class GlobalCurve : virtual public BaseCurve {
 public:
-    virtual std::size_t getDegree() const override;
+    virtual std::size_t getDegree() const final override;
 
 protected:
-    virtual ControlPoint evaluatePoint(const std::vector<float>& knots, float t) const override;
+    virtual ControlPoint evaluatePoint(float t, const std::vector<float>& knots) const final override;
 };
 
 
@@ -97,7 +99,7 @@ protected:
 ///////////////////////
 class SplineCurve : virtual public BaseCurve {
 public:
-    virtual std::size_t getDegree() const override;
+    virtual std::size_t getDegree() const final override;
 
     bool canIncDegree() const;
     bool canDecDegree() const;
@@ -109,7 +111,10 @@ protected:
     SplineCurve(std::size_t degree, std::size_t increment);
     SplineCurve(std::istream& is, std::size_t increment);
 
-    virtual ControlPoint evaluatePoint(const std::vector<float>& knots, float t) const override;
+    using KnotLayerBounds = std::vector<std::tuple<std::size_t, std::size_t>>;
+
+    virtual KnotLayerBounds getKnotLayerBounds() const =0;
+    virtual ControlPoint evaluatePoint(float t, const std::vector<float>& knots) const final override;
 
 private:
     std::size_t m_degree;
@@ -122,7 +127,7 @@ private:
 ///////////////////////
 class Approximant : virtual public BaseCurve {
 protected:
-    virtual std::vector<ControlPoint> evaluateLayer(const std::span<ControlPoint>& points, const std::span<const float>& knots, float t) const override;
+    virtual std::vector<ControlPoint> evaluateLayer(const std::span<const ControlPoint>& points, float t, const std::span<const float>& knots) const final override;
 };
 
 
@@ -131,5 +136,5 @@ protected:
 ///////////////////////
 class Interpolant : virtual public BaseCurve {
 protected:
-    virtual std::vector<ControlPoint> evaluateLayer(const std::span<ControlPoint>& points, const std::span<const float>& knots, float t) const override;
+    virtual std::vector<ControlPoint> evaluateLayer(const std::span<const ControlPoint>& points, float t, const std::span<const float>& knots) const final override;
 };

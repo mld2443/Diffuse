@@ -22,7 +22,7 @@ namespace util {
         constexpr inline double unmix(const T& value) const noexcept { return static_cast<double>(value - lower)/static_cast<double>(upper - lower); }
     };
 
-    std::size_t findIndexbetweenRanges(auto target, const std::ranges::range auto& sortedRange) {
+    std::size_t findIntervalIndex(auto target, const std::ranges::range auto& sortedRange) {
         auto it = std::ranges::upper_bound(sortedRange, target);
         return static_cast<std::size_t>(std::distance(sortedRange.begin(), it));
     }

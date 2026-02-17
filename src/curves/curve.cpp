@@ -98,6 +98,14 @@ std::size_t BaseCurve::getSegmentCount() const {
     return m_controlPoints.size() - getDegree();
 }
 
+std::vector<ControlPoint> BaseCurve::evaluateGenericLayer(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>& knots, std::size_t leftOffset, std::size_t rightOffset) {
+    return {std::from_range, std::views::zip_transform([&t](auto& left, auto& right, auto& t_l, auto& t_r) {
+        return ((t_r -  t ) * left
+              + ( t  - t_l) * right)
+              / (t_r - t_l);
+    }, lowerDegree, std::views::drop(lowerDegree, 1uz), std::views::drop(knots, leftOffset), std::views::drop(knots, rightOffset)) };
+}
+
 std::vector<ControlPoint> BaseCurve::evaluateCurve() const {
     const std::vector<float> knots = generateKnots();
     std::vector<ControlPoint> smoothCurve;
@@ -108,7 +116,7 @@ std::vector<ControlPoint> BaseCurve::evaluateCurve() const {
     const util::Range steps{0uz, m_fidelity};
 
     for (std::size_t t = steps.lower; t <= steps.upper; ++t)
-        smoothCurve.push_back(evaluatePoint(knots, domain.lerp(steps.unmix(t))));
+        smoothCurve.push_back(evaluatePoint(domain.lerp(steps.unmix(t)), knots));
 
     return smoothCurve;
 }
@@ -161,6 +169,7 @@ std::vector<float> Parameterized::generateKnots() const {
     knots.push_back(0.0f);
     knots.append_range(transformAndCumulativeSum(m_controlPoints));
 
+    // This step is probably optional
     const float normalize = static_cast<float>(knots.size() - 1uz)/knots.back();
     for (auto &knot : knots)
         knot *= normalize;
@@ -176,11 +185,11 @@ std::size_t GlobalCurve::getDegree() const {
     return m_controlPoints.size() - 1uz;
 }
 
-ControlPoint GlobalCurve::evaluatePoint(const std::vector<float>& knots, float t) const {
+ControlPoint GlobalCurve::evaluatePoint(float t, const std::vector<float>& knots) const {
     std::vector<ControlPoint> layer(m_controlPoints);
 
     while (layer.size() > 1uz)
-        layer = evaluateLayer(layer, knots, t);
+        layer = evaluateLayer(layer, t, knots);
 
     return layer.front();
 }
@@ -222,7 +231,34 @@ SplineCurve::SplineCurve(std::istream& is, std::size_t increment)
     is >> m_degree;
 }
 
-ControlPoint SplineCurve::evaluatePoint(const std::vector<float>& knots, float t) const {
+ControlPoint SplineCurve::evaluatePoint(float t, const std::vector<float>& knots) const {
+    // From b-spline
+//     const std::size_t start = std::min(getSegmentCount(), util::findIntervalIndex(t, knots) - getDegree());
+//
+//     // collect relevant subset of points and knots
+//     auto layer = std::ranges::to<std::vector<ControlPoint>>(std::views::counted(m_controlPoints.begin() + start, getDegree() + 1uz));
+//
+//     while (layer.size() > 1uz)
+//         layer = deboorLayer(layer, std::views::drop(knots, start), t);
+//
+//     return layer.front();
+
+    // From Catmull-Rom
+//     const std::size_t nevilleSteps = nevilleDegree();
+//     const std::size_t start = std::min(getSegmentCount(), util::findIntervalIndex(t, knots) - nevilleSteps);
+//
+//     // collect relevant subset of points and knots
+//     auto layer = std::ranges::to<std::vector<ControlPoint>>(std::views::counted(m_controlPoints.begin() + start, getDegree() + 1uz));
+//     const auto knotsView = std::views::counted(knots.begin() + start, getDegree() + 1uz);
+//
+//     while (layer.size() > nevilleSteps)
+//         layer = nevilleLayer(layer, knotsView, t);
+//
+//     while (layer.size() > 1uz)
+//         layer = deboorLayer(layer, knotsView, t);
+//
+//     return layer.front();
+
     return {};
 }
 
@@ -230,9 +266,9 @@ ControlPoint SplineCurve::evaluatePoint(const std::vector<float>& knots, float t
 ///////////////////////
 // MARK: Approximant //
 ///////////////////////
-std::vector<ControlPoint> Approximant::evaluateLayer(const std::span<ControlPoint>& lowerDegree, const std::span<const float>&, float t) const {
+std::vector<ControlPoint> Approximant::evaluateLayer(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>&) const {
     // Single layer of De Casteljau's algorithm
-    return {std::from_range, std::views::adjacent_transform<2uz>(lowerDegree, [&](const auto& l, const auto& r){
+    return {std::from_range, std::views::adjacent_transform<2uz>(lowerDegree, [&t](const auto& l, const auto& r){
         return util::Range{l, r}.lerp(t);
     })};
 }
@@ -241,20 +277,9 @@ std::vector<ControlPoint> Approximant::evaluateLayer(const std::span<ControlPoin
 ///////////////////////
 // MARK: Interpolant //
 ///////////////////////
-std::vector<ControlPoint> Interpolant::evaluateLayer(const std::span<ControlPoint>& lowerDegree, const std::span<const float>& knots, float t) const {
+std::vector<ControlPoint> Interpolant::evaluateLayer(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>& knots) const {
     // Single layer of Neville's algorithm
     const std::size_t degree = knots.size() - lowerDegree.size() + 1uz;
 
-    std::vector<ControlPoint> higherDegree;
-    higherDegree.reserve(lowerDegree.size() - 1uz);
-
-    for (const auto& [left, right, t_l, t_r] : std::views::zip(lowerDegree,
-                                                               std::views::drop(lowerDegree, 1uz),
-                                                               knots,
-                                                               std::views::drop(knots, degree)))
-        higherDegree.push_back(((t_r - t  ) * left
-                              + (t   - t_l) * right)
-                              / (t_r - t_l));
-
-    return higherDegree;
+    return evaluateGenericLayer(lowerDegree, t, knots, 0uz, degree);
 }
