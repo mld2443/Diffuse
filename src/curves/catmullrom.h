@@ -2,8 +2,6 @@
 
 #include "curve.h"
 
-#include <span>
-
 
 class CatmullRomCurve : public SplineCurve, public Parameterized, public Interpolant {
 public:
@@ -17,12 +15,5 @@ public:
 protected:
     virtual util::Range<std::size_t> getDomainIndices() const override;
 
-    virtual KnotLayerBounds getKnotLayerBounds() const override;
-
-private:
-    std::size_t nevilleDegree() const;
-    std::size_t deboorDegree() const;
-
-    std::vector<ControlPoint> nevilleLayer(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>& knots) const;
-    std::vector<ControlPoint> deboorLayer(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>& knots) const;
+    virtual LayerKnotBounds getLayersKnotBounds() const override;
 };

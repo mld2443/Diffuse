@@ -16,5 +16,5 @@ protected:
     virtual util::Range<std::size_t> getDomainIndices() const override;
     virtual std::vector<float> generateKnots() const override;
 
-    virtual KnotLayerBounds getKnotLayerBounds() const override;
+    virtual LayerKnotBounds getLayersKnotBounds() const override;
 };

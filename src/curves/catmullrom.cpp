@@ -1,6 +1,8 @@
 #include "catmullrom.h"
 #include "../util/common.h"
 
+#include <ranges>
+
 
 CatmullRomCurve::CatmullRomCurve(std::vector<ControlPoint>&& controlPoints)
   : BaseCurve(std::move(controlPoints))
@@ -19,32 +21,20 @@ CatmullRomCurve::CatmullRomCurve(std::istream& is)
 const char* CatmullRomCurve::getName() const { return NAME; }
 
 util::Range<std::size_t> CatmullRomCurve::getDomainIndices() const {
-    return {deboorDegree(), m_controlPoints.size() - nevilleDegree()};
+    const std::size_t degree = getDegree();
+    return { degree >> 1uz, m_controlPoints.size() - ((degree + 1uz) >> 1uz) };
 }
 
-SplineCurve::KnotLayerBounds CatmullRomCurve::getKnotLayerBounds() const {
-    return {}; //FIXME
-}
+SplineCurve::LayerKnotBounds CatmullRomCurve::getLayersKnotBounds() const {
+    const std::size_t degree = getDegree();
+    const std::size_t nevilleSteps = (degree + 1uz) >> 1uz;
+    const std::size_t deboorSteps = degree >> 1uz;
 
-std::size_t CatmullRomCurve::nevilleDegree() const {
-    return (getDegree() + 1uz) >> 1uz;
-}
+    LayerKnotBounds bounds;
+    bounds.reserve(degree);
 
-std::size_t CatmullRomCurve::deboorDegree() const {
-    return getDegree() >> 1uz;
-}
+    bounds.append_range(std::views::transform(std::views::iota(0uz, nevilleSteps), [](auto step) { return util::Range{        0uz, step + 1uz   }; }));
+    bounds.append_range(std::views::transform(std::views::iota(0uz, deboorSteps), [&](auto step) { return util::Range{ step + 1uz, nevilleSteps }; }));
 
-std::vector<ControlPoint> CatmullRomCurve::nevilleLayer(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>& knots) const {
-    const std::size_t degree = knots.size() - lowerDegree.size() + 1uz;
-
-    return evaluateGenericLayer(lowerDegree, t, knots, 0uz, degree);
-}
-
-std::vector<ControlPoint> CatmullRomCurve::deboorLayer(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>& knots) const {
-//  const std::size_t leftOffset = getDegree() + 1uz - lowerDegree.size();
-//  const std::size_t rightOffset = getDegree();
-    const std::size_t leftOffset = knots.size() - lowerDegree.size() + 1uz - nevilleDegree();
-    const std::size_t rightOffset = nevilleDegree();
-
-    return evaluateGenericLayer(lowerDegree, t, knots, leftOffset, rightOffset);
+    return bounds;
 }

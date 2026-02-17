@@ -25,9 +25,13 @@ util::Range<std::size_t> BSplineCurve::getDomainIndices() const {
 }
 
 std::vector<float> BSplineCurve::generateKnots() const {
-    return {std::from_range, std::ranges::iota_view(0uz, m_controlPoints.size() + getDegree() - 1uz)}; //FIXME
+    return {std::from_range, std::ranges::iota_view(0uz, m_controlPoints.size() + getDegree() - 1uz)}; //FIXME: add different parameterizations
 }
 
-SplineCurve::KnotLayerBounds BSplineCurve::getKnotLayerBounds() const {
-    return {}; //FIXME
+SplineCurve::LayerKnotBounds BSplineCurve::getLayersKnotBounds() const {
+    const std::size_t degree = getDegree();
+
+    return {std::from_range, std::views::transform(std::views::iota(0uz, degree), [&](auto step){
+        return util::Range{ degree, step };
+    })};
 }

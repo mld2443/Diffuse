@@ -4,12 +4,12 @@
 
 #include <GL/freeglut.h>
 
-#include <string>
+#include <string> // string
 
 
 extern int g_diffuseWindow, g_colorPickerHandle;
 
-extern ControlPoint *g_selectedPoint;
+extern ControlPoint *g_hoveredPoint;
 extern BaseCurve *g_selectedCurve;
 
 namespace {
@@ -25,7 +25,7 @@ namespace {
         NONE
     };
 
-    ColorSelect g_selected_color = ColorSelect::NONE;
+    ColorSelect g_selectedColor = ColorSelect::NONE;
 }
 
 
@@ -37,7 +37,7 @@ void ColorPicker::text(int x, int y, void* font, const std::format_string<Args..
         glutBitmapCharacter(font, character);
 }
 
-void ColorPicker::displayCurveColors() {
+void ColorPicker::display() {
     static const GLubyte available[] = {255,255,255};
     static const GLubyte disabled[]  = {128,128,128};
 
@@ -148,7 +148,7 @@ void ColorPicker::displayCurveColors() {
     glutSwapBuffers();
 }
 
-void ColorPicker::mouseCurveColors(int button, int state, int x, int y) {
+void ColorPicker::mouse(int button, int state, int x, int y) {
     if (button == GLUT_LEFT_BUTTON) {
         ::g_mouseLeftDown = state == GLUT_DOWN;
         if (::g_mouseLeftDown) {
@@ -196,103 +196,25 @@ void ColorPicker::mouseCurveColors(int button, int state, int x, int y) {
                     }
                 }
             } else {
-                ::g_selected_color = ColorSelect::NONE;
+                ::g_selectedColor = ColorSelect::NONE;
                 auto it = ::g_selectedCurve->getControlPoints().begin();
-                for (int i = BCOLOR_BUFFER; i < glutGet(GLUT_WINDOW_HEIGHT) && ::g_selected_color == ColorSelect::NONE; i += 85, it++) {
+                for (int i = BCOLOR_BUFFER; i < glutGet(GLUT_WINDOW_HEIGHT) && ::g_selectedColor == ColorSelect::NONE; i += 85, it++) {
                     if (y-i-3 > 0 && y-i-3 < 8 && abs(x - 10 - (int)(255.0f * it->l.x)) < 5)
-                        ::g_selected_color = ColorSelect::L_RED;
+                        ::g_selectedColor = ColorSelect::L_RED;
                     else if (y-i-20 > 0 && y-i-20 < 8 && abs(x - 10 - (int)(255.0f * it->r.x)) < 5)
-                        ::g_selected_color = ColorSelect::R_RED;
+                        ::g_selectedColor = ColorSelect::R_RED;
                     else if (y-i-28 > 0 && y-i-28 < 8 && abs(x - 10 - (int)(255.0f * it->l.y)) < 5)
-                        ::g_selected_color = ColorSelect::L_GRN;
+                        ::g_selectedColor = ColorSelect::L_GRN;
                     else if (y-i-45 > 0 && y-i-45 < 8 && abs(x - 10 - (int)(255.0f * it->r.y)) < 5)
-                        ::g_selected_color = ColorSelect::R_GRN;
+                        ::g_selectedColor = ColorSelect::R_GRN;
                     else if (y-i-53 > 0 && y-i-53 < 8 && abs(x - 10 - (int)(255.0f * it->l.z)) < 5)
-                        ::g_selected_color = ColorSelect::L_BLU;
+                        ::g_selectedColor = ColorSelect::L_BLU;
                     else if (y-i-70 > 0 && y-i-70 < 8 && abs(x - 10 - (int)(255.0f * it->r.z)) < 5)
-                        ::g_selected_color = ColorSelect::R_BLU;
+                        ::g_selectedColor = ColorSelect::R_BLU;
                 }
-                if (::g_selected_color != ColorSelect::NONE)
-                    ::g_selectedPoint = &*(--it);
+                if (::g_selectedColor != ColorSelect::NONE)
+                    ::g_hoveredPoint = &*(--it);
             }
-        }
-    }
-}
-
-void ColorPicker::displayPointColor() {
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
-    glBegin(GL_QUADS); {
-        glColor3ub(0,0,0);
-        glVertex2i(10, 35);
-        glVertex2i(10, 20);
-        glColor3ub(255,0,0);
-        glVertex2i(266, 20);
-        glVertex2i(266, 35);
-
-        glColor3ub(0,0,0);
-        glVertex2i(10, 80);
-        glVertex2i(10, 65);
-        glColor3ub(0,255,0);
-        glVertex2i(266, 65);
-        glVertex2i(266, 80);
-
-        glColor3ub(0,0,0);
-        glVertex2i(10, 125);
-        glVertex2i(10, 110);
-        glColor3ub(0,0,255);
-        glVertex2i(266, 110);
-        glVertex2i(266, 125);
-
-        glColor3fv(&g_selectedPoint->l.x);
-        glVertex2i(10, 266);
-        glVertex2i(10, 145);
-        glVertex2i(138, 145);
-        glVertex2i(138, 266);
-
-        glColor3fv(&g_selectedPoint->r.x);
-        glVertex2i(138, 266);
-        glVertex2i(138, 145);
-        glVertex2i(266, 145);
-        glVertex2i(266, 266);
-    } glEnd();
-
-    glBegin(GL_TRIANGLES); {
-        glColor3ub(255,255,255);
-        for (int i = 0; i < 3; ++i) {
-            const int lPos = (int)((&g_selectedPoint->l.x)[i] * 255.0f);
-            glVertex2i(lPos + 6, i * 45 + 13);
-            glVertex2i(lPos + 14, i * 45 + 13);
-            glVertex2i(lPos + 10, i * 45 + 20);
-
-            const int rPos = (int)((&g_selectedPoint->r.x)[i] * 255.0f);
-            glVertex2i(rPos + 10, i * 45 + 35);
-            glVertex2i(rPos + 14, i * 45 + 42);
-            glVertex2i(rPos + 6, i * 45 + 42);
-        }
-    } glEnd();
-
-    glFlush();
-    glutSwapBuffers();
-}
-
-void ColorPicker::mousePointColor(int button, int state, int x, int y) {
-    if (button == GLUT_LEFT_BUTTON) {
-        ::g_mouseLeftDown = state == GLUT_DOWN;
-        if (::g_mouseLeftDown) {
-            ::g_selected_color = ColorSelect::NONE;
-            if (y-13 > 0 && y-13 < 8 && abs(x - 10 - (int)(255.0f * ::g_selectedPoint->l.x)) < 5)
-                ::g_selected_color = ColorSelect::L_RED;
-            else if (y-35 > 0 && y-35 < 8 && abs(x - 10 - (int)(255.0f * ::g_selectedPoint->r.x)) < 5)
-                ::g_selected_color = ColorSelect::R_RED;
-            else if (y-58 > 0 && y-58 < 8 && abs(x - 10 - (int)(255.0f * ::g_selectedPoint->l.y)) < 5)
-                ::g_selected_color = ColorSelect::L_GRN;
-            else if (y-80 > 0 && y-80 < 8 && abs(x - 10 - (int)(255.0f * ::g_selectedPoint->r.y)) < 5)
-                ::g_selected_color = ColorSelect::R_GRN;
-            else if (y-103 > 0 && y-103 < 8 && abs(x - 10 - (int)(255.0f * ::g_selectedPoint->l.z)) < 5)
-                ::g_selected_color = ColorSelect::L_BLU;
-            else if (y-125 > 0 && y-125 < 8 && abs(x - 10 - (int)(255.0f * ::g_selectedPoint->r.z)) < 5)
-                ::g_selected_color = ColorSelect::R_BLU;
         }
     }
 }
@@ -305,35 +227,16 @@ void ColorPicker::reshape(int w, int h) {
     glMatrixMode(GL_MODELVIEW);
 }
 
-void ColorPicker::key(unsigned char c, int, int) {
-    switch(c) {
-        case 13: //return
-            break;
-
-        case 8: // delete
-            break;
-
-        case 27: //escape
-            ::g_selectedPoint = nullptr;
-            ::g_selectedCurve = nullptr;
-            glutDestroyWindow(g_colorPickerHandle);
-            ::g_colorPickerHandle = 0;
-            glutSetWindow(g_diffuseWindow);
-            glutPostRedisplay();
-            break;
-    }
-}
-
 void ColorPicker::motion(int x, int y) {
     if (::g_mouseLeftDown) {
         const float setting = (x < 265 ? ((x > 10) ? (float)(x-10) : 0.0f) : 255.0f) / 255.0f;
-        switch (::g_selected_color) {
-            case ColorSelect::L_RED: ::g_selectedPoint->l.x = setting; break;
-            case ColorSelect::L_GRN: ::g_selectedPoint->l.y = setting; break;
-            case ColorSelect::L_BLU: ::g_selectedPoint->l.z = setting; break;
-            case ColorSelect::R_RED: ::g_selectedPoint->r.x = setting; break;
-            case ColorSelect::R_GRN: ::g_selectedPoint->r.y = setting; break;
-            case ColorSelect::R_BLU: ::g_selectedPoint->r.z = setting; break;
+        switch (::g_selectedColor) {
+            case ColorSelect::L_RED: ::g_hoveredPoint->l.x = setting; break;
+            case ColorSelect::L_GRN: ::g_hoveredPoint->l.y = setting; break;
+            case ColorSelect::L_BLU: ::g_hoveredPoint->l.z = setting; break;
+            case ColorSelect::R_RED: ::g_hoveredPoint->r.x = setting; break;
+            case ColorSelect::R_GRN: ::g_hoveredPoint->r.y = setting; break;
+            case ColorSelect::R_BLU: ::g_hoveredPoint->r.z = setting; break;
             default: return;
         }
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <format>
-#include <cstddef>
+#include <format>  // format_string
+#include <cstddef> // size_t
 
 
 namespace ColorPicker {
@@ -10,13 +10,8 @@ namespace ColorPicker {
     template <typename... Args>
     void text(int x, int y, void* font, const std::format_string<Args...>& fmt, Args&&... args);
 
-    void displayCurveColors();
-    void mouseCurveColors(int button, int state, int x, int y);
-
-    void displayPointColor();
-    void mousePointColor(int button, int state, int x, int y);
-
+    void display();
+    void mouse(int button, int state, int x, int y);
     void reshape(int w, int h);
-    void key(unsigned char c, int x, int y);
     void motion(int x, int y);
 };

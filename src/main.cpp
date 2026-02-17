@@ -7,11 +7,11 @@
 
 #include <GL/freeglut.h>
 
-#include <fstream>
-#include <list>
-#include <memory>
-#include <print>
-#include <vector>
+#include <fstream> // ifstream, ofstream
+#include <list>    // list
+#include <memory>  // make_unique, unique_ptr
+#include <print>   // println
+#include <vector>  // vector
 
 
 namespace {
@@ -20,10 +20,10 @@ namespace {
     constexpr std::size_t WINDOW_OFFY = 100uz;
 
     std::size_t g_smoothness = 25uz, g_iterations = 512uz;
-    bool g_drawImage = false;
+    bool g_diffusing = false;
 
     ControlPoint *g_moving = nullptr;
-    i32v2 g_cursorLastPos;
+    f32v2 g_lastCursorPos;
     bool g_mouseLeftDown = false, g_mouseRightDown = false;
 
     std::vector<ControlPoint> g_points;
@@ -32,7 +32,7 @@ namespace {
 
 int g_diffuseWindow = 0, g_colorPickerHandle = 0;
 
-ControlPoint *g_selectedPoint = nullptr;
+ControlPoint *g_hoveredPoint = nullptr;
 BaseCurve *g_selectedCurve = nullptr;
 
 
@@ -40,9 +40,9 @@ void display() {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
     for (const auto &curve : ::g_curves)
-        curve->draw(!::g_drawImage, curve.get() == ::g_selectedCurve, ::g_selectedPoint);
+        curve->draw(!::g_diffusing, curve.get() == ::g_selectedCurve, ::g_hoveredPoint);
 
-    if (::g_drawImage) {
+    if (::g_diffusing) {
         glFlush();
 
         std::vector<RGB<GLfloat>> rawPixels(::WINDOW_SIZE * ::WINDOW_SIZE);
@@ -55,7 +55,7 @@ void display() {
         glFlush();
     } else {
         for (const auto &p : ::g_points)
-            p.draw(&p == ::g_moving, &p == ::g_selectedPoint);
+            p.draw(&p == ::g_moving, &p == ::g_hoveredPoint);
 
         glFlush();
     }
@@ -79,114 +79,7 @@ void closeColorWindow(const bool condition) {
     if (condition) {
         glutDestroyWindow(::g_colorPickerHandle);
         ::g_colorPickerHandle = 0;
-        ::g_selectedPoint = nullptr;
-    }
-}
-
-void mouse(int button, int state, int x, int y) {
-    f32v2 clickPos{ (float)x, (float)y };
-
-    switch(button) {
-        case GLUT_LEFT_BUTTON:
-            ::g_mouseLeftDown = state == GLUT_DOWN;
-
-            if (!::g_drawImage) {
-                if (::g_mouseLeftDown) {
-                    ::g_moving = nullptr;
-                    for (auto &p : ::g_points)
-                        if (p.clicked(clickPos))
-                            ::g_moving = &p;
-                    if (!::g_moving)
-                        for (auto& curve : ::g_curves)
-                            for (auto &p : curve->getControlPoints())
-                                if (p.clicked(clickPos))
-                                    ::g_moving = &p;
-
-                    if (!::g_moving) {
-                        ::g_points.push_back(ControlPoint{ clickPos });
-                    }
-                }
-                glutPostRedisplay();
-            }
-            break;
-        case GLUT_RIGHT_BUTTON:
-            ::g_mouseRightDown = state == GLUT_DOWN;
-
-            if (!g_drawImage) {
-                if (::g_mouseRightDown) {
-                    ::g_selectedPoint = nullptr;
-                    ::g_selectedCurve = nullptr;
-                    if (::g_colorPickerHandle) {
-                        glutDestroyWindow(::g_colorPickerHandle);
-                        ::g_colorPickerHandle = 0;
-                    }
-
-                    for (auto &p : ::g_points)
-                        if (p.clicked(clickPos))
-                            ::g_selectedPoint = &p;
-
-                    if (g_selectedPoint) {
-                        glutInitWindowSize(276, 276);
-                        glutInitWindowPosition(glutGet(GLUT_WINDOW_X) + glutGet(GLUT_WINDOW_WIDTH) + 10, glutGet(GLUT_WINDOW_Y));
-                        ::g_colorPickerHandle = glutCreateWindow("Point colors");
-                        glutDisplayFunc(ColorPicker::displayPointColor);
-                        glutMouseFunc(ColorPicker::mousePointColor);
-                        glutMotionFunc(ColorPicker::motion);
-                        glutKeyboardFunc(ColorPicker::key);
-                        glutReshapeFunc(ColorPicker::reshape);
-                        glClearColor(0.2, 0.2, 0.2, 0.0);
-                    } else {
-                        for (auto& curve : ::g_curves)
-                            for (auto &p : curve->getControlPoints())
-                                if (p.clicked(clickPos)) {
-                                    ::g_selectedPoint = &p;
-                                    ::g_selectedCurve = curve.get();
-                                }
-
-                        if (::g_selectedCurve) {
-                            if (::g_colorPickerHandle) {
-                                glutDestroyWindow(::g_colorPickerHandle);
-                                ::g_colorPickerHandle = 0;
-                            }
-
-                            const char* title = nullptr;
-                            if (dynamic_cast<BezierCurve*>(::g_selectedCurve))
-                                title = "Bezier Curve";
-                            else if (dynamic_cast<LagrangeCurve*>(::g_selectedCurve))
-                                title = "Lagrange Curve";
-                            else if (dynamic_cast<BSplineCurve*>(::g_selectedCurve))
-                                title = "B-Spline Curve";
-                            else if (dynamic_cast<CatmullRomCurve*>(::g_selectedCurve))
-                                title = "Catmull-Rom Curve";
-
-                            glutInitWindowSize(321, 5uz + ColorPicker::BCOLOR_BUFFER + 85uz * ::g_selectedCurve->getControlPoints().size());
-                            glutInitWindowPosition(glutGet(GLUT_WINDOW_X) + glutGet(GLUT_WINDOW_WIDTH) + 10, glutGet(GLUT_WINDOW_Y));
-                            ::g_colorPickerHandle = glutCreateWindow(title);
-                            glutDisplayFunc(ColorPicker::displayCurveColors);
-                            glutMouseFunc(ColorPicker::mouseCurveColors);
-                            glutMotionFunc(ColorPicker::motion);
-                            glutKeyboardFunc(ColorPicker::key);
-                            glutReshapeFunc(ColorPicker::reshape);
-                            glClearColor(0.2, 0.2, 0.2, 0.0);
-                        }
-                    }
-                    glutSetWindow(::g_diffuseWindow);
-                    glutPostRedisplay();
-                }
-            }
-            break;
-    }
-
-    ::g_cursorLastPos = { x, y };
-}
-
-void motion(int x, int y) {
-    ::g_cursorLastPos = { x, y };
-
-    if (::g_mouseLeftDown && ::g_moving) {
-        ::g_moving->p.x = x;
-        ::g_moving->p.y = y;
-        glutPostRedisplay();
+        ::g_hoveredPoint = nullptr;
     }
 }
 
@@ -199,7 +92,7 @@ void reshape(int w, int h) {
 }
 
 void saveFile() {
-    ::closeColorWindow(::g_selectedPoint);
+    ::closeColorWindow(::g_hoveredPoint);
 
     std::string filename;
     std::cout << "save file: ";
@@ -219,7 +112,7 @@ void saveFile() {
 }
 
 void loadFile() {
-    ::closeColorWindow(::g_selectedPoint);
+    ::closeColorWindow(::g_hoveredPoint);
 
     std::string filename;
     std::cout << "load file: ";
@@ -266,21 +159,20 @@ void key(unsigned char c, int x, int y) {
             break;
 
         case 8: //delete/backspace
-            if (!::g_drawImage && ::g_selectedCurve) {
-                ::closeColorWindow(::g_selectedPoint);
+            if (!::g_diffusing && ::g_selectedCurve) {
+                ::closeColorWindow(::g_hoveredPoint);
 
-                auto it = ::g_curves.begin();
-                for (; it->get() != ::g_selectedCurve && it != ::g_curves.end(); ++it);
-                ::g_curves.erase(it);
-                ::g_selectedCurve = nullptr;
+                if (g_curves.remove_if([&](const auto& elem){ return elem.get() == ::g_selectedCurve; }))
+                    ::g_selectedCurve = nullptr;
+
                 glutSetWindow(::g_diffuseWindow);
                 glutPostRedisplay();
             }
             break;
 
         case 127: //backspace/delete
-            if (!::g_drawImage && ::g_moving) {
-                ::closeColorWindow(::g_moving == ::g_selectedPoint);
+            if (!::g_diffusing && ::g_moving) {
+                ::closeColorWindow(::g_moving == ::g_hoveredPoint);
 
                 auto it = ::g_points.begin();
                 for (; &(*it) != ::g_moving && it != ::g_points.end(); ++it);
@@ -291,53 +183,53 @@ void key(unsigned char c, int x, int y) {
             break;
 
         case ' ':
-            ::g_drawImage = !::g_drawImage;
+            ::g_diffusing = !::g_diffusing;
             glutPostRedisplay();
             break;
 
         case '-':
-            if (::g_drawImage && ::g_smoothness > 25uz) {
+            if (::g_diffusing && ::g_smoothness > 25uz) {
                 ::g_smoothness -= 25;
                 glutPostRedisplay();
             }
             break;
 
         case '=':
-            if (::g_drawImage && ::g_smoothness < 100uz) {
+            if (::g_diffusing && ::g_smoothness < 100uz) {
                 ::g_smoothness += 25;
                 glutPostRedisplay();
             }
             break;
 
         case '_':
-            if (::g_drawImage && ::g_iterations > 4uz) {
+            if (::g_diffusing && ::g_iterations > 4uz) {
                 ::g_iterations /= 2;
                 glutPostRedisplay();
             }
             break;
 
         case '+':
-            if (::g_drawImage && ::g_iterations < 512uz) {
+            if (::g_diffusing && ::g_iterations < 512uz) {
                 ::g_iterations *= 2;
                 glutPostRedisplay();
             }
             break;
 
         case 's':
-            if (!::g_drawImage && ::g_curves.size())
+            if (!::g_diffusing && ::g_curves.size())
                 ::saveFile();
             break;
 
         case 'l':
-            if (!::g_drawImage) {
+            if (!::g_diffusing) {
                 ::loadFile();
                 glutPostRedisplay();
             }
             break;
 
         case '1':
-            if (!::g_drawImage && ::g_points.size() > 1uz) {
-                ::closeColorWindow(::g_selectedPoint);
+            if (!::g_diffusing && ::g_points.size() > 1uz) {
+                ::closeColorWindow(::g_hoveredPoint);
                 ::g_curves.push_back(std::make_unique<BezierCurve>(std::move(::g_points)));
                 ::g_points.clear();
                 glutPostRedisplay();
@@ -345,8 +237,8 @@ void key(unsigned char c, int x, int y) {
             break;
 
         case '2':
-            if (!::g_drawImage && ::g_points.size() > 1uz) {
-                ::closeColorWindow(::g_selectedPoint);
+            if (!::g_diffusing && ::g_points.size() > 1uz) {
+                ::closeColorWindow(::g_hoveredPoint);
                 ::g_curves.push_back(std::make_unique<LagrangeCurve>(std::move(::g_points)));
                 ::g_points.clear();
                 glutPostRedisplay();
@@ -354,8 +246,8 @@ void key(unsigned char c, int x, int y) {
             break;
 
         case '3':
-            if (!::g_drawImage && ::g_points.size() > 1uz) {
-                ::closeColorWindow(::g_selectedPoint);
+            if (!::g_diffusing && ::g_points.size() > 1uz) {
+                ::closeColorWindow(::g_hoveredPoint);
                 ::g_curves.push_back(std::make_unique<BSplineCurve>(std::move(::g_points)));
                 ::g_points.clear();
                 glutPostRedisplay();
@@ -363,8 +255,8 @@ void key(unsigned char c, int x, int y) {
             break;
 
         case '4':
-            if (!::g_drawImage && ::g_points.size() > 1uz) {
-                ::closeColorWindow(::g_selectedPoint);
+            if (!::g_diffusing && ::g_points.size() > 1uz) {
+                ::closeColorWindow(::g_hoveredPoint);
                 ::g_curves.push_back(std::make_unique<CatmullRomCurve>(std::move(::g_points)));
                 ::g_points.clear();
                 glutPostRedisplay();
@@ -372,12 +264,119 @@ void key(unsigned char c, int x, int y) {
             break;
 
         case 27: //escape
-            glutDestroyWindow(::g_diffuseWindow);
-            exit(0);
+            if (::g_colorPickerHandle != 0) {
+                closeColorWindow(true);
+                glutSetWindow(::g_diffuseWindow);
+            } else {
+                glutDestroyWindow(::g_diffuseWindow);
+                exit(0);
+            }
             break;
 
         default:
             break;
+    }
+}
+
+void selectCurve(f32v2 click) {
+    for (auto& curve : ::g_curves)
+        for (auto &point : curve->getControlPoints())
+            if (point.clicked(click)) {
+                ::g_hoveredPoint = &point;
+                ::g_selectedCurve = curve.get();
+            }
+}
+
+void mouse(int button, int state, int x, int y) {
+    ::g_lastCursorPos = { static_cast<float>(x), static_cast<float>(y) };
+
+    if (g_diffusing)
+        return;
+
+    switch(button) {
+        case GLUT_LEFT_BUTTON:
+            ::g_mouseLeftDown = state == GLUT_DOWN;
+            ::g_moving = nullptr;
+
+            if (::g_mouseLeftDown) {
+                // Check if selecting unaffiliated point on canvas
+                for (auto &point : ::g_points)
+                    if (point.clicked(g_lastCursorPos))
+                        ::g_moving = &point;
+
+                // Check if selecting point on an existing curve
+                if (!::g_moving)
+                    for (auto& curve : ::g_curves)
+                        for (auto &point : curve->getControlPoints())
+                            if (point.clicked(g_lastCursorPos))
+                                ::g_moving = &point;
+
+                // Add new point to canvas
+                if (!::g_moving) {
+                    ::g_points.push_back(ControlPoint{g_lastCursorPos});
+                    ::g_moving = &::g_points.back();
+                }
+            }
+            glutPostRedisplay();
+            break;
+
+        case GLUT_RIGHT_BUTTON:
+            ::g_mouseRightDown = state == GLUT_DOWN;
+
+            if (::g_mouseRightDown) {
+                ::g_selectedCurve = nullptr;
+                if (::g_colorPickerHandle) {
+                    glutDestroyWindow(::g_colorPickerHandle);
+                    ::g_colorPickerHandle = 0;
+                }
+
+                for (auto& curve : ::g_curves)
+                    for (auto &point : curve->getControlPoints())
+                        if (point.clicked(::g_lastCursorPos)) {
+                            ::g_hoveredPoint = &point;
+                            ::g_selectedCurve = curve.get();
+                        }
+
+                if (::g_selectedCurve) {
+                    if (::g_colorPickerHandle) {
+                        glutDestroyWindow(::g_colorPickerHandle);
+                        ::g_colorPickerHandle = 0;
+                    }
+
+                    const char* title = nullptr;
+                    if (dynamic_cast<BezierCurve*>(::g_selectedCurve))
+                        title = "Bezier Curve";
+                    else if (dynamic_cast<LagrangeCurve*>(::g_selectedCurve))
+                        title = "Lagrange Curve";
+                    else if (dynamic_cast<BSplineCurve*>(::g_selectedCurve))
+                        title = "B-Spline Curve";
+                    else if (dynamic_cast<CatmullRomCurve*>(::g_selectedCurve))
+                        title = "Catmull-Rom Curve";
+
+                    glutInitWindowSize(321, 5uz + ColorPicker::BCOLOR_BUFFER + 85uz * ::g_selectedCurve->getControlPoints().size());
+                    glutInitWindowPosition(glutGet(GLUT_WINDOW_X) + glutGet(GLUT_WINDOW_WIDTH) + 10, glutGet(GLUT_WINDOW_Y));
+                    ::g_colorPickerHandle = glutCreateWindow(title);
+                    glutDisplayFunc(ColorPicker::display);
+                    glutMouseFunc(ColorPicker::mouse);
+                    glutMotionFunc(ColorPicker::motion);
+                    glutKeyboardFunc(::key);
+                    glutReshapeFunc(ColorPicker::reshape);
+                    glClearColor(0.2, 0.2, 0.2, 0.0);
+                }
+
+                glutPostWindowRedisplay(::g_diffuseWindow);
+            }
+            break;
+    }
+}
+
+void motion(int x, int y) {
+    ::g_lastCursorPos = { static_cast<float>(x), static_cast<float>(y) };
+
+    if (::g_mouseLeftDown && ::g_moving) {
+        ::g_moving->coords.x = x;
+        ::g_moving->coords.y = y;
+        glutPostRedisplay();
     }
 }
 
