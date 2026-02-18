@@ -1,7 +1,6 @@
 #include "bezier.h"
-#include "../util/common.h"
 
-#include <ranges>
+#include <ranges> // drop, iota, zip_transform
 
 
 BezierCurve::BezierCurve(std::vector<ControlPoint>&& controlPoints)

@@ -34,7 +34,7 @@ protected:
 
     [[deprecated]] std::size_t getSegmentCount() const;
 
-    static std::vector<ControlPoint> evaluateLayerForStepWithBounds(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>& knots, const util::Range<std::size_t>& offsets);
+    static std::vector<ControlPoint> evaluateLayerForStepWithWindow(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>& knots, const util::Range<std::size_t>& window);
 
     // provided by parameterization
     virtual util::Range<std::size_t> getDomainIndices() const =0;
@@ -111,9 +111,9 @@ protected:
     SplineCurve(std::size_t degree, std::size_t increment);
     SplineCurve(std::istream& is, std::size_t increment);
 
-    using LayerKnotBounds = std::vector<util::Range<std::size_t>>;
+    using KnotWindows = std::vector<util::Range<std::size_t>>;
 
-    virtual LayerKnotBounds getLayersKnotBounds() const =0;
+    virtual KnotWindows getKnotWindows() const =0;
     virtual ControlPoint evaluatePoint(float t, const std::vector<float>& knots) const final override;
 
 private:

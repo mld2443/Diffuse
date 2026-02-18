@@ -1,5 +1,4 @@
 #include "lagrange.h"
-#include "../util/common.h"
 
 
 LagrangeCurve::LagrangeCurve(std::vector<ControlPoint>&& controlPoints)

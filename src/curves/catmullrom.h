@@ -15,5 +15,5 @@ public:
 protected:
     virtual util::Range<std::size_t> getDomainIndices() const override;
 
-    virtual LayerKnotBounds getLayersKnotBounds() const override;
+    virtual KnotWindows getKnotWindows() const override;
 };

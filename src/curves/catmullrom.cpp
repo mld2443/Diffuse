@@ -1,7 +1,6 @@
 #include "catmullrom.h"
-#include "../util/common.h"
 
-#include <ranges>
+#include <ranges> // iota, transform
 
 
 CatmullRomCurve::CatmullRomCurve(std::vector<ControlPoint>&& controlPoints)
@@ -25,12 +24,12 @@ util::Range<std::size_t> CatmullRomCurve::getDomainIndices() const {
     return { degree >> 1uz, m_controlPoints.size() - ((degree + 1uz) >> 1uz) };
 }
 
-SplineCurve::LayerKnotBounds CatmullRomCurve::getLayersKnotBounds() const {
+SplineCurve::KnotWindows CatmullRomCurve::getKnotWindows() const {
     const std::size_t degree = getDegree();
     const std::size_t nevilleSteps = (degree + 1uz) >> 1uz;
     const std::size_t deboorSteps = degree >> 1uz;
 
-    LayerKnotBounds bounds;
+    KnotWindows bounds;
     bounds.reserve(degree);
 
     bounds.append_range(std::views::transform(std::views::iota(0uz, nevilleSteps), [](auto step) { return util::Range{        0uz, step + 1uz   }; }));

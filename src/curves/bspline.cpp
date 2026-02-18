@@ -1,7 +1,6 @@
 #include "bspline.h"
-#include "../util/common.h"
 
-#include <ranges>
+#include <ranges> // from_range, iota, iota_view, transform
 
 
 BSplineCurve::BSplineCurve(std::vector<ControlPoint>&& controlPoints)
@@ -28,10 +27,10 @@ std::vector<float> BSplineCurve::generateKnots() const {
     return {std::from_range, std::ranges::iota_view(0uz, m_controlPoints.size() + getDegree() - 1uz)}; //FIXME: add different parameterizations
 }
 
-SplineCurve::LayerKnotBounds BSplineCurve::getLayersKnotBounds() const {
+SplineCurve::KnotWindows BSplineCurve::getKnotWindows() const {
     const std::size_t degree = getDegree();
 
     return {std::from_range, std::views::transform(std::views::iota(0uz, degree), [&](auto step){
-        return util::Range{ degree, step };
+        return util::Range{ step, degree };
     })};
 }
