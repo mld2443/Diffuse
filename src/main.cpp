@@ -136,7 +136,7 @@ void loadFile(std::string filename) {
             else if (type == CatmullRomCurve::NAME)
                 ::g_curves.push_back(std::make_unique<CatmullRomCurve>(file));
             else
-                std::println("file error: invalid type");
+                std::println("file error: invalid type '{}'", type);
         }
         file >> count;
         for (std::size_t pointId = 0uz; pointId < count; ++pointId) {

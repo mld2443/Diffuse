@@ -13,7 +13,7 @@ BSplineCurve::BSplineCurve(std::vector<ControlPoint>&& controlPoints)
 BSplineCurve::BSplineCurve(std::istream& is)
   : BaseCurve(is)
   , SplineCurve(is, 1uz)
-  , Parameterized(0.0f)
+  , Parameterized(is)
   , Approximant()
 {}
 
