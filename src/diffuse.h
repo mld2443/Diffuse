@@ -36,9 +36,9 @@ Image<T> maskedBlur(Image<T>&& buffer, std::size_t iterations, std::size_t blurU
     if (buffer.m_width > blurUpTo && buffer.m_height > blurUpTo)
         return buffer;
 
-    static constexpr Kernel kernel{ { { 0.f, 1.f, 1.f, 0.f, 1.f, },
-                                      { 2.f, 0.f, 1.f, 0.f, 0.f, },
-                                      { 0.f, 0.f, 0.f, 3.f, 0.f, }, } };
+    static constexpr Kernel kernel{ { { 0.f, 1.f, 0.f, },
+                                      { 1.f, 1.f, 1.f, },
+                                      { 0.f, 1.f, 0.f, }, } };
 
     for (std::size_t step = 0uz; step < iterations; ++step)
         for (std::size_t y = 0uz; y < buffer.m_height; ++y)
