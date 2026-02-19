@@ -188,7 +188,7 @@ void key(unsigned char c, int x, int y) {
 
         case '-':
             if (::g_diffusing && ::g_smoothness > 0uz) {
-                ::g_smoothness -= 5uz;
+                --::g_smoothness;
                 std::println("Smoothness: {}", ::g_smoothness);
                 glutPostRedisplay();
             }
@@ -196,7 +196,7 @@ void key(unsigned char c, int x, int y) {
 
         case '=':
             if (::g_diffusing) {
-                ::g_smoothness += 5uz;
+                ++::g_smoothness;
                 std::println("Smoothness: {}", ::g_smoothness);
                 glutPostRedisplay();
             }
