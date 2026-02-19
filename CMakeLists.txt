@@ -4,6 +4,7 @@ project(diffuse)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(SOURCE_FILES
+    src/util/Timer.cpp
     src/point.cpp
     src/curves/curve.cpp
     src/curves/bezier.cpp

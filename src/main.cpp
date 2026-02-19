@@ -1,3 +1,4 @@
+#include "util/Timer.h"
 #include "curves/lagrange.h"
 #include "curves/bezier.h"
 #include "curves/bspline.h"
@@ -7,11 +8,12 @@
 
 #include <GL/freeglut.h>
 
-#include <fstream> // ifstream, ofstream
-#include <list>    // list
-#include <memory>  // make_unique, unique_ptr
-#include <print>   // println
-#include <vector>  // vector
+#include <fstream>  // ifstream, ofstream
+#include <iostream> // cin, endl
+#include <list>     // list
+#include <memory>   // make_unique, unique_ptr
+#include <print>    // println
+#include <vector>   // vector
 
 
 namespace {
@@ -19,7 +21,7 @@ namespace {
     constexpr std::size_t WINDOW_OFFX = 100uz;
     constexpr std::size_t WINDOW_OFFY = 100uz;
 
-    std::size_t g_smoothness = 25uz, g_iterations = 512uz;
+    std::size_t g_smoothness = 5uz, g_pyramidBlurUpTo = WINDOW_SIZE;
     bool g_diffusing = false;
 
     ControlPoint *g_moving = nullptr;
@@ -49,7 +51,10 @@ void display() {
 
         glReadPixels(0, 0, ::WINDOW_SIZE, ::WINDOW_SIZE, GL_RGB, GL_FLOAT, rawPixels.data());
 
-        rawPixels = ::pyramidDiffusion(Image<GLfloat>(rawPixels, ::WINDOW_SIZE, ::WINDOW_SIZE), ::g_smoothness).convertToRGB();
+        {
+            Timer t("Diffusion");
+            rawPixels = ::pyramidDiffusion(Image<GLfloat>(rawPixels, ::WINDOW_SIZE, ::WINDOW_SIZE), ::g_smoothness, ::g_pyramidBlurUpTo).convertToRGB();
+        }
 
         glDrawPixels(::WINDOW_SIZE, ::WINDOW_SIZE, GL_RGB, GL_FLOAT, rawPixels.data());
         glFlush();
@@ -83,41 +88,35 @@ void closeColorWindow(const bool condition) {
     }
 }
 
-void reshape(int w, int h) {
-    glViewport(0, 0, w, h);
+void reshape(int width, int height) {
+    glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluOrtho2D(0, glutGet(GLUT_WINDOW_WIDTH) - 1, glutGet(GLUT_WINDOW_HEIGHT) - 1, 0);
     glMatrixMode(GL_MODELVIEW);
 }
 
-void saveFile() {
-    ::closeColorWindow(::g_hoveredPoint);
+void saveFile(std::string filename) {
+    ::closeColorWindow(true);
 
-    std::string filename;
-    std::cout << "save file: ";
-    std::cin >> filename;
     std::ofstream file;
     file.open(filename);
 
     file << ::g_curves.size() << std::endl;
-    for (auto &c : ::g_curves)
-        file << *c;
+    for (auto &curve : ::g_curves)
+        file << *curve;
 
     file << ::g_points.size() << std::endl;
-    for (auto &p : ::g_points)
-        file << p;
+    for (auto &point : ::g_points)
+        file << point;
 
     file.close();
 }
 
-void loadFile() {
-    ::closeColorWindow(::g_hoveredPoint);
-
-    std::string filename;
-    std::cout << "load file: ";
-    std::cin >> filename;
+void loadFile(std::string filename) {
     if (std::ifstream file(filename); file.is_open()) {
+        ::closeColorWindow(true);
+
         ::g_curves.clear();
         ::g_points.clear();
 
@@ -172,12 +171,12 @@ void key(unsigned char c, int x, int y) {
 
         case 127: //backspace/delete
             if (!::g_diffusing && ::g_moving) {
-                ::closeColorWindow(::g_moving == ::g_hoveredPoint);
-
                 auto it = ::g_points.begin();
                 for (; &(*it) != ::g_moving && it != ::g_points.end(); ++it);
-                ::g_points.erase(it);
-                ::g_moving = nullptr;
+                if (it != g_points.end()) {
+                    ::g_points.erase(it);
+                    ::g_moving = nullptr;
+                }
                 glutPostRedisplay();
             }
             break;
@@ -188,41 +187,52 @@ void key(unsigned char c, int x, int y) {
             break;
 
         case '-':
-            if (::g_diffusing && ::g_smoothness > 25uz) {
-                ::g_smoothness -= 25;
+            if (::g_diffusing && ::g_smoothness > 0uz) {
+                ::g_smoothness -= 5uz;
+                std::println("Smoothness: {}", ::g_smoothness);
                 glutPostRedisplay();
             }
             break;
 
         case '=':
-            if (::g_diffusing && ::g_smoothness < 100uz) {
-                ::g_smoothness += 25;
+            if (::g_diffusing) {
+                ::g_smoothness += 5uz;
+                std::println("Smoothness: {}", ::g_smoothness);
                 glutPostRedisplay();
             }
             break;
 
         case '_':
-            if (::g_diffusing && ::g_iterations > 4uz) {
-                ::g_iterations /= 2;
+            if (::g_diffusing && ::g_pyramidBlurUpTo > 1uz) {
+                ::g_pyramidBlurUpTo >>= 1uz;
+                std::println("BlurTo: {}", ::g_pyramidBlurUpTo);
                 glutPostRedisplay();
             }
             break;
 
         case '+':
-            if (::g_diffusing && ::g_iterations < 512uz) {
-                ::g_iterations *= 2;
+            if (::g_diffusing && ::g_pyramidBlurUpTo < ::WINDOW_SIZE) {
+                ::g_pyramidBlurUpTo <<= 1uz;
+                std::println("BlurTo: {}", ::g_pyramidBlurUpTo);
                 glutPostRedisplay();
             }
             break;
 
         case 's':
-            if (!::g_diffusing && ::g_curves.size())
-                ::saveFile();
+            if (!::g_diffusing && ::g_curves.size()) {
+                std::string filename;
+                std::print("save file: ");
+                std::cin >> filename;
+                ::saveFile(filename);
+            }
             break;
 
         case 'l':
             if (!::g_diffusing) {
-                ::loadFile();
+                std::string filename;
+                std::print("load file: ");
+                std::cin >> filename;
+                ::loadFile(filename);
                 glutPostRedisplay();
             }
             break;
@@ -387,6 +397,7 @@ int main(int argc, char** argv) {
     glutInitWindowPosition(::WINDOW_OFFX, ::WINDOW_OFFY);
     ::g_diffuseWindow = glutCreateWindow("Diffusion Curves");
     ::init();
+    ::loadFile("../V.txt");
     glutReshapeFunc(::reshape);
     glutDisplayFunc(::display);
     glutMouseFunc(::mouse);

@@ -92,7 +92,7 @@ void BaseCurve::draw(bool drawPoints, bool isCurveSelected, const ControlPoint* 
 
 BaseCurve::BaseCurve(std::vector<ControlPoint>&& controlPoints)
   : m_controlPoints(std::move(controlPoints))
-  , m_fidelity(50uz)
+  , m_fidelity(60uz)
 {}
 
 std::size_t BaseCurve::getSegmentCount() const {

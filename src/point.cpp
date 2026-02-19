@@ -12,11 +12,11 @@ namespace {
 // fColor //
 ////////////
 std::istream& operator>>(std::istream& is, fColor& v) {
-    auto toUnorm = [](uint8_t from) {
+    auto toUnorm = [](uint32_t from) {
         return static_cast<float>(from) / 255.0f;
     };
 
-    uint8_t x, y, z;
+    uint32_t x, y, z;
     is >> x >> y >> z;
     v = { toUnorm(x), toUnorm(y), toUnorm(z) };
     return is;
@@ -24,7 +24,7 @@ std::istream& operator>>(std::istream& is, fColor& v) {
 
 std::ostream& operator<<(std::ostream& os, const fColor& v) {
     auto toScalar = [](float from) {
-        return static_cast<uint8_t>(255.0f * from);
+        return static_cast<uint32_t>(255.0f * from);
     };
 
     return os << toScalar(v.x) << " " << toScalar(v.y) << " " << toScalar(v.z);
