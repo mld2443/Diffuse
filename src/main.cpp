@@ -21,7 +21,8 @@ namespace {
     constexpr std::size_t WINDOW_OFFX = 100uz;
     constexpr std::size_t WINDOW_OFFY = 100uz;
 
-    std::size_t g_smoothness = 5uz, g_pyramidBlurUpTo = WINDOW_SIZE;
+    std::size_t g_smoothness = 1uz, g_pyramidBlurUpTo = WINDOW_SIZE;
+    bool g_pyramidOn = false;
     bool g_diffusing = false;
 
     ControlPoint *g_moving = nullptr;
@@ -53,7 +54,10 @@ void display() {
 
         {
             Timer t("Diffusion");
-            rawPixels = ::pyramidDiffusion(Image<GLfloat>(rawPixels, ::WINDOW_SIZE, ::WINDOW_SIZE), ::g_smoothness, ::g_pyramidBlurUpTo).convertToRGB();
+            if (::g_pyramidOn)
+                rawPixels = ::pyramidDiffusion(Image<GLfloat>(rawPixels, ::WINDOW_SIZE, ::WINDOW_SIZE), ::g_smoothness, ::g_pyramidBlurUpTo).convertToRGB();
+            else
+                rawPixels = ::maskedBlur(Image<GLfloat>(rawPixels, ::WINDOW_SIZE, ::WINDOW_SIZE), ::g_smoothness * 100uz, ::g_pyramidBlurUpTo).convertToRGB();
         }
 
         glDrawPixels(::WINDOW_SIZE, ::WINDOW_SIZE, GL_RGB, GL_FLOAT, rawPixels.data());
@@ -152,6 +156,11 @@ void loadFile(std::string filename) {
 void key(unsigned char c, int x, int y) {
     switch(c) {
         case 9: //tab
+            if (::g_diffusing) {
+                ::g_pyramidOn = !::g_pyramidOn;
+                std::println("Pyramid: {}", ::g_pyramidOn ? "on" : "off");
+                glutPostRedisplay();
+            }
             break;
 
         case 13: //return

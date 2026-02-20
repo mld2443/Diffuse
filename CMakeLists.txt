@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.27)
 project(diffuse)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(SOURCE_FILES
     src/util/Timer.cpp

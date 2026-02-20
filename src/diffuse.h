@@ -36,17 +36,20 @@ Image<T> maskedBlur(Image<T>&& buffer, std::size_t iterations, std::size_t blurU
     if (buffer.m_width > blurUpTo && buffer.m_height > blurUpTo)
         return buffer;
 
+    FlipBuffer images{ Image<T>{ buffer } };
+
     static constexpr Kernel kernel{ { { 0.f, 1.f, 0.f, },
                                       { 1.f, 1.f, 1.f, },
                                       { 0.f, 1.f, 0.f, }, } };
 
-    for (std::size_t step = 0uz; step < iterations; ++step)
-        for (std::size_t y = 0uz; y < buffer.m_height; ++y)
-            for (std::size_t x = 0uz; x < buffer.m_width; ++x)
-                if (buffer[x, y].a == T{0})
-                    buffer[x, y].rgb = buffer.sample(x, y, kernel);
+    for (std::size_t step = 0uz; step < iterations; ++step) {
+        for (std::size_t y = 0uz; y < images.height(); ++y)
+            for (std::size_t x = 0uz; x < images.width(); ++x)
+                images.dst()[x, y] = buffer[x, y].a > T{0} ? buffer[x, y] : images.src().sample(x, y, kernel);
+        images.flip();
+    }
 
-    return buffer;
+    return std::move(images.src());
 }
 
 template<typename T>

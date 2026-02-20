@@ -79,7 +79,7 @@ struct Image {
     {}
 
     template <std::size_t WIDTH, std::size_t HEIGHT>
-    RGB<T> sample(std::ptrdiff_t x_0, std::ptrdiff_t y_0, const Kernel<T, WIDTH, HEIGHT> &kernel) const {
+    RGBA<T> sample(std::ptrdiff_t x_0, std::ptrdiff_t y_0, const Kernel<T, WIDTH, HEIGHT> &kernel) const {
         RGBA<T> accumulator;
 
         for (std::ptrdiff_t y_i = 0l; y_i < HEIGHT; ++y_i) {
@@ -89,26 +89,48 @@ struct Image {
                     const std::ptrdiff_t x = x_0 + x_i - WIDTH/2uz,
                                          y = y_0 + y_i - HEIGHT/2uz;
                     if (x >= 0l && x < m_width &&
-                        y >= 0l && y < m_height) {
-                        const RGBA sample{ .rgb = this->operator[](x, y).rgb, .a = T{1} };
-                        accumulator += sample * strength;
-                    }
+                        y >= 0l && y < m_height &&
+                        this->operator[](x, y).a > T{0})
+                        accumulator += this->operator[](x, y) * strength;
                 }
             }
         }
 
-        return accumulator.normalize().rgb;
+        if (accumulator.a > T{0})
+            return accumulator.normalize();
+
+        return {};
     }
 
     Image& operator=(Image&& rhs) = default;
 
     decltype(auto) operator[](this auto&& self, std::size_t x, std::size_t y) { return self.m_pixels[y*self.m_width + x]; }
-    RGBA<T>* getPtr() { return m_pixels.data(); }
 
     std::vector<RGB<T>> convertToRGB() const { return { std::from_range, std::views::transform(m_pixels, [](const RGBA<T>& elem){ return elem.rgb; }) }; }
 
 public:
-    const std::size_t m_width, m_height;
+    std::size_t m_width, m_height;
 private:
     std::vector<RGBA<T>> m_pixels;
+};
+
+
+template <typename T>
+struct FlipBuffer {
+    FlipBuffer(Image<T>&& seed)
+      : buffers{ std::move(seed), { seed.m_height, seed.m_width } }
+      , flipped(false)
+    {}
+
+    void flip() { flipped = !flipped; }
+
+    const Image<T>& src() const { return buffers[flipped ? 1 : 0]; }
+          Image<T>& dst()       { return buffers[flipped ? 0 : 1]; }
+
+    std::size_t  width() const { return buffers[0].m_width ; }
+    std::size_t height() const { return buffers[0].m_height; }
+
+private:
+    Image<T> buffers[2];
+    bool flipped;
 };
