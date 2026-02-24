@@ -8,6 +8,7 @@
 
 #include <GL/freeglut.h>
 
+#include <cmath>    // log2
 #include <fstream>  // ifstream, ofstream
 #include <iostream> // cin, endl
 #include <list>     // list
@@ -21,8 +22,7 @@ namespace {
     constexpr std::size_t WINDOW_OFFX = 100uz;
     constexpr std::size_t WINDOW_OFFY = 100uz;
 
-    std::size_t g_smoothness = 1uz, g_pyramidBlurUpTo = WINDOW_SIZE;
-    bool g_pyramidOn = false;
+    std::size_t g_blurIterations = 20uz, g_pyramidDepth = std::log2(WINDOW_SIZE);
     bool g_diffusing = false;
 
     ControlPoint *g_moving = nullptr;
@@ -54,10 +54,7 @@ void display() {
 
         {
             Timer t("Diffusion");
-            if (::g_pyramidOn)
-                rawPixels = ::pyramidDiffusion(Image<GLfloat>(rawPixels, ::WINDOW_SIZE, ::WINDOW_SIZE), ::g_smoothness, ::g_pyramidBlurUpTo).convertToRGB();
-            else
-                rawPixels = ::maskedBlur(Image<GLfloat>(rawPixels, ::WINDOW_SIZE, ::WINDOW_SIZE), ::g_smoothness * 100uz, ::g_pyramidBlurUpTo).convertToRGB();
+            rawPixels = ::pyramidDiffusion(Image<GLfloat>(rawPixels, ::WINDOW_SIZE, ::WINDOW_SIZE), ::g_blurIterations, ::g_pyramidDepth).convertToRGB();
         }
 
         glDrawPixels(::WINDOW_SIZE, ::WINDOW_SIZE, GL_RGB, GL_FLOAT, rawPixels.data());
@@ -156,11 +153,6 @@ void loadFile(std::string filename) {
 void key(unsigned char c, int x, int y) {
     switch(c) {
         case 9: //tab
-            if (::g_diffusing) {
-                ::g_pyramidOn = !::g_pyramidOn;
-                std::println("Pyramid: {}", ::g_pyramidOn ? "on" : "off");
-                glutPostRedisplay();
-            }
             break;
 
         case 13: //return
@@ -196,34 +188,36 @@ void key(unsigned char c, int x, int y) {
             break;
 
         case '-':
-            if (::g_diffusing && ::g_smoothness > 0uz) {
-                --::g_smoothness;
-                std::println("Smoothness: {}", ::g_smoothness);
-                glutPostRedisplay();
+            if (::g_blurIterations > 0uz) {
+                --::g_blurIterations;
+                std::println("BlurIterations: {}, Depth: {}", ::g_blurIterations, ::g_pyramidDepth);
+                if (::g_diffusing)
+                    glutPostRedisplay();
             }
             break;
 
         case '=':
-            if (::g_diffusing) {
-                ++::g_smoothness;
-                std::println("Smoothness: {}", ::g_smoothness);
-                glutPostRedisplay();
-            }
+                ++::g_blurIterations;
+                std::println("BlurIterations: {}, Depth: {}", ::g_blurIterations, ::g_pyramidDepth);
+                if (::g_diffusing)
+                    glutPostRedisplay();
             break;
 
         case '_':
-            if (::g_diffusing && ::g_pyramidBlurUpTo > 1uz) {
-                ::g_pyramidBlurUpTo >>= 1uz;
-                std::println("BlurTo: {}", ::g_pyramidBlurUpTo);
-                glutPostRedisplay();
+            if (::g_pyramidDepth > 0uz) {
+                --::g_pyramidDepth;
+                std::println("BlurIterations: {}, Depth: {}", ::g_blurIterations, ::g_pyramidDepth);
+                if (::g_diffusing)
+                    glutPostRedisplay();
             }
             break;
 
         case '+':
-            if (::g_diffusing && ::g_pyramidBlurUpTo < ::WINDOW_SIZE) {
-                ::g_pyramidBlurUpTo <<= 1uz;
-                std::println("BlurTo: {}", ::g_pyramidBlurUpTo);
-                glutPostRedisplay();
+            if (::WINDOW_SIZE >> ::g_pyramidDepth > 1uz) {
+                ++::g_pyramidDepth;
+                std::println("BlurIterations: {}, Depth: {}", ::g_blurIterations, ::g_pyramidDepth);
+                if (::g_diffusing)
+                    glutPostRedisplay();
             }
             break;
 

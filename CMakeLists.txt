@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(SOURCE_FILES
     src/util/Timer.cpp
+    src/util/PNGWriter.cpp
     src/point.cpp
     src/curves/curve.cpp
     src/curves/bezier.cpp
@@ -17,7 +18,13 @@ set(SOURCE_FILES
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
+find_package(PNG REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::OpenGL OpenGL::GLU GLUT::GLUT)
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    PNG::PNG
+    OpenGL::OpenGL
+    OpenGL::GLU
+    GLUT::GLUT
+)

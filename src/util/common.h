@@ -1,10 +1,24 @@
 #pragma once
 
-#include <ranges>
-#include <algorithm>
-#include <utility>
-#include <type_traits>
+#include <algorithm>   // clamp, upper_bound
+#include <format>      // format, format_string
+#include <iterator>    // distance
+#include <ranges>      // ranges::range
+#include <string>      // string
+#include <type_traits> // is_floating_point_v
+#include <utility>     // cmp_less, cmp_less_equal, forward
 
+
+// MARK: Build Flags
+#if NDEBUG
+#define DEBUG 0
+#define RELEASE 1
+#define DEBUGONLY(...)
+#else
+#define DEBUG 1
+#define RELEASE 0
+#define DEBUGONLY(...) __VA_ARGS__
+#endif
 
 namespace util {
     template <typename T>
@@ -26,4 +40,12 @@ namespace util {
         auto it = std::ranges::upper_bound(sortedRange, target);
         return static_cast<std::size_t>(std::distance(sortedRange.begin(), it));
     }
+
+    // MARK: Error Report
+    struct Critical {
+        template <typename... Args>
+        Critical(const std::format_string<Args...>& fmt, Args&&... args) : report(std::format(fmt, std::forward<Args>(args)...)) {}
+
+        const std::string report;
+    };
 }

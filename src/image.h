@@ -1,10 +1,15 @@
 #pragma once
 
+#include "util/PNGWriter.h"
+
 #include <algorithm> // fold_left, max, min
 #include <cstddef>   // ptrdiff_t, size_t
+#include <format>    // format, format_string
 #include <ranges>    // from_range, join, transform
 #include <utility>   // index_sequence, make_index_sequence
 #include <vector>    // vector
+
+#define COPYCONST(T1, ...) std::conditional_t<std::is_const_v<std::remove_reference_t<T1>>, const __VA_ARGS__, __VA_ARGS__>
 
 
 template <typename T, std::size_t WIDTH, std::size_t HEIGHT>
@@ -61,6 +66,9 @@ struct RGBA {
     void operator/=(this auto& lhs, const    T& rhs) { lhs.rgb /= rhs    ; lhs.a /= rhs  ; }
 
     RGBA normalize() const { return { .rgb = rgb / a, .a = T{1} }; }
+
+    constexpr auto begin(this auto&& self) -> COPYCONST(decltype(self), T*) { return { &self.r       }; }
+    constexpr auto   end(this auto&& self) -> COPYCONST(decltype(self), T*) { return { &self.a + 1uz }; }
 };
 
 
@@ -90,8 +98,8 @@ struct Image {
                                          y = y_0 + y_i - HEIGHT/2uz;
                     if (x >= 0l && x < m_width &&
                         y >= 0l && y < m_height &&
-                        this->operator[](x, y).a > T{0})
-                        accumulator += this->operator[](x, y) * strength;
+                        operator[](x, y).a > T{0})
+                        accumulator += operator[](x, y) * strength;
                 }
             }
         }
@@ -107,6 +115,14 @@ struct Image {
     decltype(auto) operator[](this auto&& self, std::size_t x, std::size_t y) { return self.m_pixels[y*self.m_width + x]; }
 
     std::vector<RGB<T>> convertToRGB() const { return { std::from_range, std::views::transform(m_pixels, [](const RGBA<T>& elem){ return elem.rgb; }) }; }
+
+    void writeTo(std::size_t stepNumber, const char* prefix) const {
+        PNGWriter file{std::format("{}-{}_{}x{}.png", stepNumber, prefix, m_width, m_height)};
+
+        std::vector<png_byte> flat_pixels{std::from_range, std::views::transform(std::views::join(m_pixels), [](const float& x){ return static_cast<png_byte>(255.f * x); })};
+
+        file.write(flat_pixels, PixelFormat::RGBA, m_width, m_height);
+    }
 
 public:
     std::size_t m_width, m_height;
@@ -134,3 +150,6 @@ private:
     Image<T> buffers[2];
     bool flipped;
 };
+
+
+#undef COPYCONST

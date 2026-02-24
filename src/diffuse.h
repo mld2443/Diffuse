@@ -9,9 +9,9 @@ template<typename T>
 Image<T> downscale(const Image<T>& fromLarger) {
     Image<T> toSmaller(fromLarger.m_width >> 1uz, fromLarger.m_height >> 1uz);
 
-    for (std::size_t y = 0uz; y < fromLarger.m_height; ++y)
-        for (std::size_t x = 0uz; x < fromLarger.m_width; ++x)
-            toSmaller[x >> 1uz, y >> 1uz] += fromLarger[x, y];
+    for (std::size_t Y = 0uz; Y < fromLarger.m_height; ++Y)
+        for (std::size_t X = 0uz; X < fromLarger.m_width; ++X)
+            toSmaller[X >> 1uz, Y >> 1uz] += fromLarger[X, Y];
 
     for (std::size_t y = 0uz; y < toSmaller.m_height; ++y)
         for (std::size_t x = 0uz; x < toSmaller.m_width; ++x)
@@ -22,40 +22,47 @@ Image<T> downscale(const Image<T>& fromLarger) {
 }
 
 template<typename T>
-Image<T> upscale(const Image<T>&& fromSmaller, Image<T>& toLarger) {
-    for (std::size_t y = 0uz; y < toLarger.m_height; ++y)
-        for (std::size_t x = 0uz; x < toLarger.m_width; ++x)
-            if (toLarger[x, y].a == T{0})
-                toLarger[x, y].rgb = fromSmaller[x >> 1uz, y >> 1uz].rgb;
+Image<T> upscale(const Image<T>&& fromSmaller, const Image<T>& mask) {
+    Image<T> toLarger{mask.m_width, mask.m_height};
+
+    for (std::size_t Y = 0uz; Y < toLarger.m_height; ++Y)
+        for (std::size_t X = 0uz; X < toLarger.m_width; ++X)
+            toLarger[X, Y] = mask[X, Y].a > T{0} ? mask[X, Y] : fromSmaller[X >> 1uz, Y >> 1uz];
 
     return toLarger;
 }
 
 template<typename T>
-Image<T> maskedBlur(Image<T>&& buffer, std::size_t iterations, std::size_t blurUpTo) {
-    if (buffer.m_width > blurUpTo && buffer.m_height > blurUpTo)
-        return buffer;
-
-    FlipBuffer images{ Image<T>{ buffer } };
-
+Image<T> maskedBlur(Image<T>&& image, const Image<T>& mask, std::size_t iterations) {
     static constexpr Kernel kernel{ { { 0.f, 1.f, 0.f, },
                                       { 1.f, 1.f, 1.f, },
                                       { 0.f, 1.f, 0.f, }, } };
 
+    FlipBuffer buffers{ std::move(image) };
+
+    // copy over masked parts
+    for (std::size_t y = 0uz; y < buffers.height(); ++y)
+        for (std::size_t x = 0uz; x < buffers.width(); ++x)
+            if (mask[x, y].a > T{0})
+                buffers.dst()[x, y] = buffers.src()[x, y];
+
+    // blur unmasked parts
     for (std::size_t step = 0uz; step < iterations; ++step) {
-        for (std::size_t y = 0uz; y < images.height(); ++y)
-            for (std::size_t x = 0uz; x < images.width(); ++x)
-                images.dst()[x, y] = buffer[x, y].a > T{0} ? buffer[x, y] : images.src().sample(x, y, kernel);
-        images.flip();
+        for (std::size_t y = 0uz; y < buffers.height(); ++y)
+            for (std::size_t x = 0uz; x < buffers.width(); ++x)
+                if (mask[x, y].a <= T{0})
+                    buffers.dst()[x, y] = buffers.src().sample(x, y, kernel);
+        buffers.flip();
     }
 
-    return std::move(images.src());
+    // src() is const lvalue to prevent mistakes above, but now it's time to go, no need to copy
+    return std::move(const_cast<Image<T>&>(buffers.src()));
 }
 
 template<typename T>
-Image<T> pyramidDiffusion(Image<T>&& buffer, std::size_t iterations, std::size_t blurUpTo) {
-    if (buffer.m_width <= 1uz || buffer.m_height <= 1uz)
-        return buffer;
+Image<T> pyramidDiffusion(Image<T>&& buffer, std::size_t iterations, std::size_t depth) {
+    if (depth <= 0uz || buffer.m_width <= 1uz || buffer.m_height <= 1uz)
+        return maskedBlur(Image<T>{buffer}, buffer, iterations);
 
-    return maskedBlur(upscale(pyramidDiffusion(downscale(buffer), iterations, blurUpTo), buffer), iterations, blurUpTo);
+    return maskedBlur(upscale(pyramidDiffusion(downscale(buffer), iterations, depth - 1uz), buffer), buffer, iterations);
 }
