@@ -12,9 +12,15 @@ public:
 
     virtual const char* getName() const override;
 
+    bool getClamped() const;
+    void toggleClamped();
+
 protected:
     virtual util::Range<std::size_t> getDomainIndices() const override;
     virtual std::vector<float> generateKnots() const override;
 
     virtual KnotWindows getKnotWindows() const override;
+
+private:
+    bool m_clamped;
 };

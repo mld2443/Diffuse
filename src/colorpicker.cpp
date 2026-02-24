@@ -1,6 +1,7 @@
 #include "colorpicker.h"
-#include "curves/curve.h"
 #include "curves/bezier.h"
+#include "curves/bspline.h"
+#include "curves/curve.h"
 
 #include <GL/freeglut.h>
 
@@ -70,6 +71,11 @@ void ColorPicker::display() {
     if (dynamic_cast<BezierCurve*>(::g_selectedCurve)) {
         glColor3ubv(available);
         text(110, 18, GLUT_BITMAP_HELVETICA_10, "ELEVATE DEGREE");
+    }
+
+    if (BSplineCurve* bspline = dynamic_cast<BSplineCurve*>(::g_selectedCurve)) {
+        glColor3ubv(available);
+        text(110, 18, GLUT_BITMAP_HELVETICA_10, "CLAMPED {}", bspline->getClamped() ? "ON" : "OFF");
     }
 
     if (Parameterized* curve = dynamic_cast<Parameterized*>(::g_selectedCurve)) {
@@ -175,6 +181,17 @@ void ColorPicker::mouse(int button, int state, int x, int y) {
                             bezier->elevateDegree();
                             glutReshapeWindow(321, glutGet(GLUT_WINDOW_HEIGHT) + 85);
                             glutPostWindowRedisplay(g_diffuseWindow);
+                            return;
+                        }
+                    }
+                }
+
+                if (BSplineCurve* bspline = dynamic_cast<BSplineCurve*>(::g_selectedCurve)) {
+                    if (x > 109 && x < 197) {
+                        if (y > 10 && y < 20) {
+                            bspline->toggleClamped();
+                            glutPostWindowRedisplay(g_diffuseWindow);
+                            glutPostRedisplay();
                             return;
                         }
                     }
