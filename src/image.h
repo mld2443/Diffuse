@@ -2,7 +2,7 @@
 
 #include "util/PNGWriter.h"
 
-#include <algorithm> // fold_left, max, min
+#include <algorithm> // clamp, fold_left, max, min
 #include <cstddef>   // ptrdiff_t, size_t
 #include <format>    // format, format_string
 #include <ranges>    // from_range, join, transform
@@ -86,8 +86,16 @@ struct Image {
         }))
     {}
 
+    enum class EdgePolicy {
+        BLACK,
+        TRANSPARENT,
+        CLAMPED,
+        WRAPPED,
+        MIRROR,
+    };
+
     template <std::size_t WIDTH, std::size_t HEIGHT>
-    RGBA<T> sample(std::ptrdiff_t x_0, std::ptrdiff_t y_0, const Kernel<T, WIDTH, HEIGHT> &kernel) const {
+    RGBA<T> sampleKernel(std::ptrdiff_t x_0, std::ptrdiff_t y_0, const Kernel<T, WIDTH, HEIGHT> &kernel, EdgePolicy policy) const {
         RGBA<T> accumulator;
 
         for (std::ptrdiff_t y_i = 0l; y_i < HEIGHT; ++y_i) {
@@ -96,10 +104,7 @@ struct Image {
                 if (strength != T{0}) {
                     const std::ptrdiff_t x = x_0 + x_i - WIDTH/2uz,
                                          y = y_0 + y_i - HEIGHT/2uz;
-                    if (x >= 0l && x < m_width &&
-                        y >= 0l && y < m_height &&
-                        operator[](x, y).a > T{0})
-                        accumulator += operator[](x, y) * strength;
+                    accumulator += samplePoint(x, y, policy) * strength;
                 }
             }
         }
@@ -113,6 +118,30 @@ struct Image {
     Image& operator=(Image&& rhs) = default;
 
     decltype(auto) operator[](this auto&& self, std::size_t x, std::size_t y) { return self.m_pixels[y*self.m_width + x]; }
+
+    RGBA<T> samplePoint(std::ptrdiff_t x, std::ptrdiff_t y, EdgePolicy policy) const {
+        switch (policy) {
+            case EdgePolicy::BLACK:
+                if (x >= 0l && x < m_width &&
+                    y >= 0l && y < m_height)
+                    return m_pixels[y*m_width + x];
+                else
+                    return { 0.f, 0.f, 0.f, 1.f };
+            case EdgePolicy::TRANSPARENT:
+                if (x >= 0l && x < m_width &&
+                    y >= 0l && y < m_height)
+                    return m_pixels[y*m_width + x];
+                else
+                    return { 0.f, 0.f, 0.f, 0.f };
+            case EdgePolicy::CLAMPED:
+                return m_pixels[std::clamp(y, 0l, static_cast<std::ptrdiff_t>(m_height - 1l))*m_width + std::clamp(x, 0l, static_cast<std::ptrdiff_t>(m_width - 1l))];
+            case EdgePolicy::WRAPPED:
+                return m_pixels[(y % m_height)*m_width + (x % m_width)];
+            case EdgePolicy::MIRROR: //TODO: implement mirror
+            default:
+                return {};
+        }
+    }
 
     std::vector<RGB<T>> convertToRGB() const { return { std::from_range, std::views::transform(m_pixels, [](const RGBA<T>& elem){ return elem.rgb; }) }; }
 

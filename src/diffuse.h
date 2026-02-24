@@ -33,7 +33,7 @@ Image<T> upscale(const Image<T>&& fromSmaller, const Image<T>& mask) {
 }
 
 template<typename T>
-Image<T> maskedBlur(Image<T>&& image, const Image<T>& mask, std::size_t iterations) {
+Image<T> maskedBlur(Image<T>&& image, const Image<T>& mask, std::size_t iterations, typename Image<T>::EdgePolicy policy) {
     static constexpr Kernel kernel{ { { 0.f, 1.f, 0.f, },
                                       { 1.f, 1.f, 1.f, },
                                       { 0.f, 1.f, 0.f, }, } };
@@ -51,7 +51,7 @@ Image<T> maskedBlur(Image<T>&& image, const Image<T>& mask, std::size_t iteratio
         for (std::size_t y = 0uz; y < buffers.height(); ++y)
             for (std::size_t x = 0uz; x < buffers.width(); ++x)
                 if (mask[x, y].a <= T{0})
-                    buffers.dst()[x, y] = buffers.src().sample(x, y, kernel);
+                    buffers.dst()[x, y] = buffers.src().sampleKernel(x, y, kernel, policy);
         buffers.flip();
     }
 
@@ -60,9 +60,9 @@ Image<T> maskedBlur(Image<T>&& image, const Image<T>& mask, std::size_t iteratio
 }
 
 template<typename T>
-Image<T> pyramidDiffusion(Image<T>&& buffer, std::size_t iterations, std::size_t depth) {
+Image<T> pyramidDiffusion(Image<T>&& buffer, std::size_t iterations, typename Image<T>::EdgePolicy policy, std::size_t depth) {
     if (depth <= 0uz || buffer.m_width <= 1uz || buffer.m_height <= 1uz)
-        return maskedBlur(Image<T>{buffer}, buffer, iterations);
+        return maskedBlur(Image<T>{buffer}, buffer, iterations, policy);
 
-    return maskedBlur(upscale(pyramidDiffusion(downscale(buffer), iterations, depth - 1uz), buffer), buffer, iterations);
+    return maskedBlur(upscale(pyramidDiffusion(downscale(buffer), iterations, policy, depth - 1uz), buffer), buffer, iterations, policy);
 }

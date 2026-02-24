@@ -24,6 +24,7 @@ namespace {
 
     std::size_t g_blurIterations = 20uz, g_pyramidDepth = std::log2(WINDOW_SIZE);
     bool g_diffusing = false;
+    Image<GLfloat>::EdgePolicy g_diffusePolicy = Image<GLfloat>::EdgePolicy::TRANSPARENT;
 
     ControlPoint *g_moving = nullptr;
     f32v2 g_lastCursorPos;
@@ -54,7 +55,7 @@ void display() {
 
         {
             Timer t("Diffusion");
-            rawPixels = ::pyramidDiffusion(Image<GLfloat>(rawPixels, ::WINDOW_SIZE, ::WINDOW_SIZE), ::g_blurIterations, ::g_pyramidDepth).convertToRGB();
+            rawPixels = ::pyramidDiffusion(Image<GLfloat>(rawPixels, ::WINDOW_SIZE, ::WINDOW_SIZE), ::g_blurIterations, ::g_diffusePolicy, ::g_pyramidDepth).convertToRGB();
         }
 
         glDrawPixels(::WINDOW_SIZE, ::WINDOW_SIZE, GL_RGB, GL_FLOAT, rawPixels.data());
@@ -153,10 +154,27 @@ void loadFile(std::string filename) {
 void key(unsigned char c, int x, int y) {
     switch(c) {
         case 9: //tab
-            break;
+            switch (::g_diffusePolicy) {
+                case Image<GLfloat>::EdgePolicy::TRANSPARENT:
+                    ::g_diffusePolicy = Image<GLfloat>::EdgePolicy::BLACK;
+                    std::println("Diffusion edge policy set to 'BLACK'");
+                    break;
+                case Image<GLfloat>::EdgePolicy::BLACK:
+                    ::g_diffusePolicy = Image<GLfloat>::EdgePolicy::WRAPPED;
+                    std::println("Diffusion edge policy set to 'WRAPPED'");
+                    break;
+                default:
+                case Image<GLfloat>::EdgePolicy::WRAPPED:
+                    ::g_diffusePolicy = Image<GLfloat>::EdgePolicy::TRANSPARENT;
+                    std::println("Diffusion edge policy set to 'TRANSPARENT'");
+                    break;
+            }
+            if (::g_diffusing)
+                glutPostRedisplay();
+            return;
 
-        case 13: //return
-            break;
+        case 13: //enter/return
+            return;
 
         case 8: //delete/backspace
             if (!::g_diffusing && ::g_selectedCurve) {
@@ -168,7 +186,7 @@ void key(unsigned char c, int x, int y) {
                 glutSetWindow(::g_diffuseWindow);
                 glutPostRedisplay();
             }
-            break;
+            return;
 
         case 127: //backspace/delete
             if (!::g_diffusing && ::g_moving) {
@@ -180,12 +198,12 @@ void key(unsigned char c, int x, int y) {
                 }
                 glutPostRedisplay();
             }
-            break;
+            return;
 
         case ' ':
             ::g_diffusing = !::g_diffusing;
             glutPostRedisplay();
-            break;
+            return;
 
         case '-':
             if (::g_blurIterations > 0uz) {
@@ -194,14 +212,14 @@ void key(unsigned char c, int x, int y) {
                 if (::g_diffusing)
                     glutPostRedisplay();
             }
-            break;
+            return;
 
         case '=':
                 ++::g_blurIterations;
                 std::println("BlurIterations: {}, Depth: {}", ::g_blurIterations, ::g_pyramidDepth);
                 if (::g_diffusing)
                     glutPostRedisplay();
-            break;
+            return;
 
         case '_':
             if (::g_pyramidDepth > 0uz) {
@@ -210,7 +228,7 @@ void key(unsigned char c, int x, int y) {
                 if (::g_diffusing)
                     glutPostRedisplay();
             }
-            break;
+            return;
 
         case '+':
             if (::WINDOW_SIZE >> ::g_pyramidDepth > 1uz) {
@@ -219,7 +237,7 @@ void key(unsigned char c, int x, int y) {
                 if (::g_diffusing)
                     glutPostRedisplay();
             }
-            break;
+            return;
 
         case 's':
             if (!::g_diffusing && ::g_curves.size()) {
@@ -228,7 +246,7 @@ void key(unsigned char c, int x, int y) {
                 std::cin >> filename;
                 ::saveFile(filename);
             }
-            break;
+            return;
 
         case 'l':
             if (!::g_diffusing) {
@@ -238,7 +256,7 @@ void key(unsigned char c, int x, int y) {
                 ::loadFile(filename);
                 glutPostRedisplay();
             }
-            break;
+            return;
 
         case '1':
             if (!::g_diffusing && ::g_points.size() > 1uz) {
@@ -247,7 +265,7 @@ void key(unsigned char c, int x, int y) {
                 ::g_points.clear();
                 glutPostRedisplay();
             }
-            break;
+            return;
 
         case '2':
             if (!::g_diffusing && ::g_points.size() > 1uz) {
@@ -256,7 +274,7 @@ void key(unsigned char c, int x, int y) {
                 ::g_points.clear();
                 glutPostRedisplay();
             }
-            break;
+            return;
 
         case '3':
             if (!::g_diffusing && ::g_points.size() > 1uz) {
@@ -265,7 +283,7 @@ void key(unsigned char c, int x, int y) {
                 ::g_points.clear();
                 glutPostRedisplay();
             }
-            break;
+            return;
 
         case '4':
             if (!::g_diffusing && ::g_points.size() > 1uz) {
@@ -274,7 +292,7 @@ void key(unsigned char c, int x, int y) {
                 ::g_points.clear();
                 glutPostRedisplay();
             }
-            break;
+            return;
 
         case 27: //escape
             if (::g_colorPickerHandle != 0) {
@@ -284,10 +302,10 @@ void key(unsigned char c, int x, int y) {
                 glutDestroyWindow(::g_diffuseWindow);
                 exit(0);
             }
-            break;
+            return;
 
         default:
-            break;
+            return;
     }
 }
 
