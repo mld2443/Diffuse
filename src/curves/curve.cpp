@@ -85,6 +85,14 @@ void BaseCurve::draw(bool drawPoints, bool isCurveSelected, const ControlPoint* 
         glVertex2fv(&right.coords.x);
     } glEnd();
 
+    if (isCurveSelected)
+    glBegin(GL_LINE_STRIP); {
+        // Ideally would be blended, but I don't want to implement painters' algorithm
+        glColor3f(0.7f, 0.0f, 0.0f);
+        for (const auto &point : m_controlPoints)
+            glVertex2fv(&point.coords.x);
+    } glEnd();
+
     if (drawPoints)
         for (const auto &point : m_controlPoints)
             point.draw(isCurveSelected, isCurveSelected && &point == selectedPoint);
