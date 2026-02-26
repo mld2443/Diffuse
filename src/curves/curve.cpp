@@ -60,7 +60,7 @@ void BaseCurve::draw(bool drawPoints, bool isCurveSelected, bool drawSubCurves, 
 
     auto sampled = evaluateCurve();
 
-    if (drawSubCurves && isCurveSelected && drawPoints && getDegree() > 1uz) {
+    if (isCurveSelected && drawPoints && getDegree() > 1uz) {
         glBegin(GL_LINE_STRIP); {
             // Ideally would be blended, but I don't want to implement painters' algorithm here
             glColor3f(0.6f, 0.0f, 0.0f);
@@ -68,24 +68,26 @@ void BaseCurve::draw(bool drawPoints, bool isCurveSelected, bool drawSubCurves, 
                 glVertex2fv(&point.coords.x);
         } glEnd();
 
-        static const float colors[][3] = {
-            {0.6f, 0.6f, 0.0f},
-            {0.0f, 0.6f, 0.0f},
-            {0.0f, 0.6f, 0.6f},
-            {0.0f, 0.0f, 0.6f},
-            {0.6f, 0.0f, 0.6f},
-            {0.6f, 0.0f, 0.0f},
-        };
+        if (drawSubCurves) {
+            static const float colors[][3] = {
+                {0.6f, 0.6f, 0.0f},
+                {0.0f, 0.6f, 0.0f},
+                {0.0f, 0.6f, 0.6f},
+                {0.0f, 0.0f, 0.6f},
+                {0.6f, 0.0f, 0.6f},
+                {0.6f, 0.0f, 0.0f},
+            };
 
-        for (const auto [index, layer] : std::views::enumerate(sampled.layers)) {
-            glColor3fv(colors[index % 6uz]);
-            for (const auto& subCurve : layer) {
-                glBegin(GL_LINE_STRIP); {
-                    // Ideally would be blended, but I don't want to implement painters' algorithm here
-                    for (const f32v2& point : subCurve) {
-                            glVertex2fv(&point.x);
-                    }
-                } glEnd();
+            for (const auto [index, layer] : std::views::enumerate(sampled.layers)) {
+                glColor3fv(colors[index % 6uz]);
+                for (const auto& subCurve : layer) {
+                    glBegin(GL_LINE_STRIP); {
+                        // Ideally would be blended, but I don't want to implement painters' algorithm here
+                        for (const f32v2& point : subCurve) {
+                                glVertex2fv(&point.x);
+                        }
+                    } glEnd();
+                }
             }
         }
     }
@@ -122,7 +124,7 @@ void BaseCurve::draw(bool drawPoints, bool isCurveSelected, bool drawSubCurves, 
 
 BaseCurve::BaseCurve(std::vector<ControlPoint>&& controlPoints)
   : m_controlPoints(std::move(controlPoints))
-  , m_fidelity(60uz)
+  , m_fidelity(15uz * (m_controlPoints.size() - 1uz))
 {}
 
 std::vector<ControlPoint> BaseCurve::evaluateLayerForStepWithWindow(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>& knots, const util::Range<std::size_t>& window) {
@@ -143,7 +145,7 @@ BaseCurve::CurveEvaluation BaseCurve::evaluateCurve() const {
     if (getDegree() > 1uz) {
         smoothCurve.layers.resize(getDegree() - 2uz);
         for (auto [index, layer] : std::views::enumerate(smoothCurve.layers)) {
-            layer.resize(m_controlPoints.size() - index - 2uz);
+            layer.resize(getDegree() - 1uz - index);
             for (auto& subcurve : layer)
                 subcurve.reserve(m_fidelity + 1uz);
         }

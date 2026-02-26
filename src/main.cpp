@@ -100,55 +100,59 @@ void reshape(int width, int height) {
 }
 
 void saveFile(std::string filename) {
-    ::closeColorWindow(true);
+    if (!filename.empty()) {
+        if (std::ofstream file(filename); file.is_open()) {
+            file << ::g_curves.size() << std::endl;
+            for (auto &curve : ::g_curves)
+                file << *curve;
 
-    std::ofstream file;
-    file.open(filename);
+            file << ::g_points.size() << std::endl;
+            for (auto &point : ::g_points)
+                file << point;
 
-    file << ::g_curves.size() << std::endl;
-    for (auto &curve : ::g_curves)
-        file << *curve;
-
-    file << ::g_points.size() << std::endl;
-    for (auto &point : ::g_points)
-        file << point;
-
-    file.close();
+            file.close();
+        }
+    }
 }
 
 void loadFile(std::string filename) {
-    if (std::ifstream file(filename); file.is_open()) {
-        ::closeColorWindow(true);
+    if (!filename.empty()) {
+        if (std::ifstream file(filename); file.is_open()) {
+            ::closeColorWindow(true);
 
-        ::g_curves.clear();
-        ::g_points.clear();
+            ::g_curves.clear();
+            ::g_points.clear();
 
-        std::size_t count;
-        file >> count;
+            std::size_t count;
+            file >> count;
 
-        for (std::size_t curveId = 0uz; curveId < count; ++curveId) {
-            std::string type;
-            file >> type;
+            for (std::size_t curveId = 0uz; curveId < count; ++curveId) {
+                std::string type;
+                file >> type;
 
-            if (type == BezierCurve::NAME)
-                ::g_curves.push_back(std::make_unique<BezierCurve>(file));
-            else if (type == LagrangeCurve::NAME)
-                ::g_curves.push_back(std::make_unique<LagrangeCurve>(file));
-            else if (type == BSplineCurve::NAME)
-                ::g_curves.push_back(std::make_unique<BSplineCurve>(file));
-            else if (type == CatmullRomCurve::NAME)
-                ::g_curves.push_back(std::make_unique<CatmullRomCurve>(file));
-            else
-                std::println("file error: invalid type '{}'", type);
+                if (type == BezierCurve::NAME)
+                    ::g_curves.push_back(std::make_unique<BezierCurve>(file));
+                else if (type == LagrangeCurve::NAME)
+                    ::g_curves.push_back(std::make_unique<LagrangeCurve>(file));
+                else if (type == BSplineCurve::NAME)
+                    ::g_curves.push_back(std::make_unique<BSplineCurve>(file));
+                else if (type == CatmullRomCurve::NAME)
+                    ::g_curves.push_back(std::make_unique<CatmullRomCurve>(file));
+                else
+                    std::println("file error: invalid type '{}'", type);
+            }
+            file >> count;
+            for (std::size_t pointId = 0uz; pointId < count; ++pointId) {
+                ControlPoint p;
+                file >> p;
+                ::g_points.push_back(p);
+            }
+
+            file.close();
+
+            glutSetWindow(::g_diffuseWindow);
+            glutPostRedisplay();
         }
-        file >> count;
-        for (std::size_t pointId = 0uz; pointId < count; ++pointId) {
-            ControlPoint p;
-            file >> p;
-            ::g_points.push_back(p);
-        }
-
-        file.close();
     }
 }
 
@@ -171,10 +175,10 @@ void key(unsigned char c, int x, int y) {
                         std::println("Diffusion edge policy set to 'TRANSPARENT'");
                         break;
                 }
-                glutPostRedisplay();
+                glutPostWindowRedisplay(::g_diffuseWindow);
             } else {
                 ::g_drawSubCurves = !::g_drawSubCurves;
-                glutPostRedisplay();
+                glutPostWindowRedisplay(::g_diffuseWindow);
             }
             return;
 
@@ -201,13 +205,13 @@ void key(unsigned char c, int x, int y) {
                     ::g_points.erase(it);
                     ::g_moving = nullptr;
                 }
-                glutPostRedisplay();
+                glutPostWindowRedisplay(::g_diffuseWindow);
             }
             return;
 
         case ' ':
             ::g_diffusing = !::g_diffusing;
-            glutPostRedisplay();
+            glutPostWindowRedisplay(::g_diffuseWindow);
             return;
 
         case '-':
@@ -215,7 +219,7 @@ void key(unsigned char c, int x, int y) {
                 --::g_blurIterations;
                 std::println("BlurIterations: {}, Depth: {}", ::g_blurIterations, ::g_pyramidDepth);
                 if (::g_diffusing)
-                    glutPostRedisplay();
+                    glutPostWindowRedisplay(::g_diffuseWindow);
             }
             return;
 
@@ -223,7 +227,7 @@ void key(unsigned char c, int x, int y) {
                 ++::g_blurIterations;
                 std::println("BlurIterations: {}, Depth: {}", ::g_blurIterations, ::g_pyramidDepth);
                 if (::g_diffusing)
-                    glutPostRedisplay();
+                    glutPostWindowRedisplay(::g_diffuseWindow);
             return;
 
         case '_':
@@ -231,7 +235,7 @@ void key(unsigned char c, int x, int y) {
                 --::g_pyramidDepth;
                 std::println("BlurIterations: {}, Depth: {}", ::g_blurIterations, ::g_pyramidDepth);
                 if (::g_diffusing)
-                    glutPostRedisplay();
+                    glutPostWindowRedisplay(::g_diffuseWindow);
             }
             return;
 
@@ -240,7 +244,7 @@ void key(unsigned char c, int x, int y) {
                 ++::g_pyramidDepth;
                 std::println("BlurIterations: {}, Depth: {}", ::g_blurIterations, ::g_pyramidDepth);
                 if (::g_diffusing)
-                    glutPostRedisplay();
+                    glutPostWindowRedisplay(::g_diffuseWindow);
             }
             return;
 
@@ -259,7 +263,6 @@ void key(unsigned char c, int x, int y) {
                 std::print("load file: ");
                 std::cin >> filename;
                 ::loadFile(filename);
-                glutPostRedisplay();
             }
             return;
 
@@ -268,7 +271,7 @@ void key(unsigned char c, int x, int y) {
                 ::closeColorWindow(::g_hoveredPoint);
                 ::g_curves.push_back(std::make_unique<BezierCurve>(std::move(::g_points)));
                 ::g_points.clear();
-                glutPostRedisplay();
+                glutPostWindowRedisplay(::g_diffuseWindow);
             }
             return;
 
@@ -277,7 +280,7 @@ void key(unsigned char c, int x, int y) {
                 ::closeColorWindow(::g_hoveredPoint);
                 ::g_curves.push_back(std::make_unique<LagrangeCurve>(std::move(::g_points)));
                 ::g_points.clear();
-                glutPostRedisplay();
+                glutPostWindowRedisplay(::g_diffuseWindow);
             }
             return;
 
@@ -286,7 +289,7 @@ void key(unsigned char c, int x, int y) {
                 ::closeColorWindow(::g_hoveredPoint);
                 ::g_curves.push_back(std::make_unique<BSplineCurve>(std::move(::g_points)));
                 ::g_points.clear();
-                glutPostRedisplay();
+                glutPostWindowRedisplay(::g_diffuseWindow);
             }
             return;
 
@@ -295,7 +298,7 @@ void key(unsigned char c, int x, int y) {
                 ::closeColorWindow(::g_hoveredPoint);
                 ::g_curves.push_back(std::make_unique<CatmullRomCurve>(std::move(::g_points)));
                 ::g_points.clear();
-                glutPostRedisplay();
+                glutPostWindowRedisplay(::g_diffuseWindow);
             }
             return;
 
