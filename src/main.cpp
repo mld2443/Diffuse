@@ -23,6 +23,7 @@ namespace {
     constexpr std::size_t WINDOW_OFFY = 100uz;
 
     std::size_t g_blurIterations = 20uz, g_pyramidDepth = std::log2(WINDOW_SIZE);
+    bool g_drawSubCurves = false;
     bool g_diffusing = false;
     Image<GLfloat>::EdgePolicy g_diffusePolicy = Image<GLfloat>::EdgePolicy::TRANSPARENT;
 
@@ -44,7 +45,7 @@ void display() {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
     for (const auto &curve : ::g_curves)
-        curve->draw(!::g_diffusing, curve.get() == ::g_selectedCurve, ::g_hoveredPoint);
+        curve->draw(!::g_diffusing, curve.get() == ::g_selectedCurve, ::g_drawSubCurves, ::g_hoveredPoint);
 
     if (::g_diffusing) {
         glFlush();
@@ -154,23 +155,27 @@ void loadFile(std::string filename) {
 void key(unsigned char c, int x, int y) {
     switch(c) {
         case 9: //tab
-            switch (::g_diffusePolicy) {
-                case Image<GLfloat>::EdgePolicy::TRANSPARENT:
-                    ::g_diffusePolicy = Image<GLfloat>::EdgePolicy::BLACK;
-                    std::println("Diffusion edge policy set to 'BLACK'");
-                    break;
-                case Image<GLfloat>::EdgePolicy::BLACK:
-                    ::g_diffusePolicy = Image<GLfloat>::EdgePolicy::WRAPPED;
-                    std::println("Diffusion edge policy set to 'WRAPPED'");
-                    break;
-                default:
-                case Image<GLfloat>::EdgePolicy::WRAPPED:
-                    ::g_diffusePolicy = Image<GLfloat>::EdgePolicy::TRANSPARENT;
-                    std::println("Diffusion edge policy set to 'TRANSPARENT'");
-                    break;
-            }
-            if (::g_diffusing)
+            if (::g_diffusing) {
+                switch (::g_diffusePolicy) {
+                    case Image<GLfloat>::EdgePolicy::TRANSPARENT:
+                        ::g_diffusePolicy = Image<GLfloat>::EdgePolicy::BLACK;
+                        std::println("Diffusion edge policy set to 'BLACK'");
+                        break;
+                    case Image<GLfloat>::EdgePolicy::BLACK:
+                        ::g_diffusePolicy = Image<GLfloat>::EdgePolicy::WRAPPED;
+                        std::println("Diffusion edge policy set to 'WRAPPED'");
+                        break;
+                    default:
+                    case Image<GLfloat>::EdgePolicy::WRAPPED:
+                        ::g_diffusePolicy = Image<GLfloat>::EdgePolicy::TRANSPARENT;
+                        std::println("Diffusion edge policy set to 'TRANSPARENT'");
+                        break;
+                }
                 glutPostRedisplay();
+            } else {
+                ::g_drawSubCurves = !::g_drawSubCurves;
+                glutPostRedisplay();
+            }
             return;
 
         case 13: //enter/return

@@ -27,12 +27,20 @@ public:
 
     void setFidelity(std::size_t fidelity);
 
-    void draw(bool drawPoints, bool selected, const ControlPoint* sp) const;
+    void draw(bool drawPoints, bool selected, bool drawSubCurves, const ControlPoint* sp) const;
 
 protected:
-    BaseCurve(std::vector<ControlPoint>&& controlPoints);
+    struct PyramidEvaluation {
+        ControlPoint result;
+        std::vector<std::vector<f32v2>> layers;
+    };
 
-    [[deprecated]] std::size_t getSegmentCount() const;
+    struct CurveEvaluation {
+        std::vector<ControlPoint> result;
+        std::vector<std::vector<std::vector<f32v2>>> layers;
+    };
+
+    BaseCurve(std::vector<ControlPoint>&& controlPoints);
 
     static std::vector<ControlPoint> evaluateLayerForStepWithWindow(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>& knots, const util::Range<std::size_t>& window);
 
@@ -41,13 +49,13 @@ protected:
     virtual std::vector<float> generateKnots() const =0;
 
     // provided by locality type
-    virtual ControlPoint evaluatePoint(float t, const std::vector<float>& knots) const =0;
+    virtual PyramidEvaluation evaluatePoint(float t, const std::vector<float>& knots) const =0;
 
     // provided by interpolation type
     virtual std::vector<ControlPoint> evaluateLayerForStep(const std::span<const ControlPoint>& points, float t, const std::span<const float>& knots) const =0;
 
 private:
-    std::vector<ControlPoint> evaluateCurve() const;
+    CurveEvaluation evaluateCurve() const;
 
 protected:
     std::vector<ControlPoint> m_controlPoints;
@@ -90,7 +98,7 @@ public:
     virtual std::size_t getDegree() const final override;
 
 protected:
-    virtual ControlPoint evaluatePoint(float t, const std::vector<float>& knots) const final override;
+    virtual PyramidEvaluation evaluatePoint(float t, const std::vector<float>& knots) const final override;
 };
 
 
@@ -114,7 +122,7 @@ protected:
     using KnotWindows = std::vector<util::Range<std::size_t>>;
 
     virtual KnotWindows getKnotWindows() const =0;
-    virtual ControlPoint evaluatePoint(float t, const std::vector<float>& knots) const final override;
+    virtual PyramidEvaluation evaluatePoint(float t, const std::vector<float>& knots) const final override;
 
 private:
     std::size_t m_degree;

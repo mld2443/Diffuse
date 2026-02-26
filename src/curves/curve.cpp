@@ -54,24 +54,45 @@ void BaseCurve::setFidelity(std::size_t f) {
     m_fidelity = f;
 }
 
-void BaseCurve::draw(bool drawPoints, bool isCurveSelected, const ControlPoint* selectedPoint) const {
+void BaseCurve::draw(bool drawPoints, bool isCurveSelected, bool drawSubCurves, const ControlPoint* selectedPoint) const {
     if (m_controlPoints.size() < 2uz)
         return;
 
     auto sampled = evaluateCurve();
 
-    if (drawPoints && isCurveSelected) {
+    if (drawSubCurves && isCurveSelected && drawPoints && getDegree() > 1uz) {
         glBegin(GL_LINE_STRIP); {
             // Ideally would be blended, but I don't want to implement painters' algorithm here
-            glColor3f(0.7f, 0.0f, 0.0f);
+            glColor3f(0.6f, 0.0f, 0.0f);
             for (const auto &point : m_controlPoints)
                 glVertex2fv(&point.coords.x);
         } glEnd();
+
+        static const float colors[][3] = {
+            {0.6f, 0.6f, 0.0f},
+            {0.0f, 0.6f, 0.0f},
+            {0.0f, 0.6f, 0.6f},
+            {0.0f, 0.0f, 0.6f},
+            {0.6f, 0.0f, 0.6f},
+            {0.6f, 0.0f, 0.0f},
+        };
+
+        for (const auto [index, layer] : std::views::enumerate(sampled.layers)) {
+            glColor3fv(colors[index % 6uz]);
+            for (const auto& subCurve : layer) {
+                glBegin(GL_LINE_STRIP); {
+                    // Ideally would be blended, but I don't want to implement painters' algorithm here
+                    for (const f32v2& point : subCurve) {
+                            glVertex2fv(&point.x);
+                    }
+                } glEnd();
+            }
+        }
     }
 
     glBegin(GL_QUAD_STRIP); {
-        auto i2 = sampled.begin(), i1 = i2++;
-        while (i2 != sampled.end()) {
+        auto i2 = sampled.result.begin(), i1 = i2++;
+        while (i2 != sampled.result.end()) {
             auto left = i1->leftside(*i2);
             auto right = i1->rightside(*i2);
 
@@ -104,10 +125,6 @@ BaseCurve::BaseCurve(std::vector<ControlPoint>&& controlPoints)
   , m_fidelity(60uz)
 {}
 
-std::size_t BaseCurve::getSegmentCount() const {
-    return m_controlPoints.size() - getDegree();
-}
-
 std::vector<ControlPoint> BaseCurve::evaluateLayerForStepWithWindow(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>& knots, const util::Range<std::size_t>& window) {
     return {std::from_range, std::views::zip_transform([&t](auto& left, auto& right, auto& t_l, auto& t_r) {
         return ((t_r -  t ) * left
@@ -116,17 +133,30 @@ std::vector<ControlPoint> BaseCurve::evaluateLayerForStepWithWindow(const std::s
     }, lowerDegree, std::views::drop(lowerDegree, 1uz), std::views::drop(knots, window.lower), std::views::drop(knots, window.upper)) };
 }
 
-std::vector<ControlPoint> BaseCurve::evaluateCurve() const {
+BaseCurve::CurveEvaluation BaseCurve::evaluateCurve() const {
     const std::vector<float> knots = generateKnots();
-    std::vector<ControlPoint> smoothCurve;
-    smoothCurve.reserve(m_fidelity + 1uz);
-
     const util::Range indices = getDomainIndices();
-    const util::Range domain{knots[indices.lower], knots[indices.upper]};
-    const util::Range steps{0uz, m_fidelity};
+    const util::Range domain{ knots[indices.lower], knots[indices.upper] };
+    const util::Range steps{ 0uz, m_fidelity };
 
-    for (std::size_t t = steps.lower; t <= steps.upper; ++t)
-        smoothCurve.push_back(evaluatePoint(domain.lerp(steps.unmix(t)), knots));
+    CurveEvaluation smoothCurve;
+    if (getDegree() > 1uz) {
+        smoothCurve.layers.resize(getDegree() - 2uz);
+        for (auto [index, layer] : std::views::enumerate(smoothCurve.layers)) {
+            layer.resize(m_controlPoints.size() - index - 2uz);
+            for (auto& subcurve : layer)
+                subcurve.reserve(m_fidelity + 1uz);
+        }
+    }
+    smoothCurve.result.reserve(m_fidelity + 1uz);
+
+    for (std::size_t t = steps.lower; t <= steps.upper; ++t) {
+        PyramidEvaluation evaluation{evaluatePoint(domain.lerp(steps.unmix(t)), knots)};
+        for (auto [pointRow, curveRow] : std::views::zip(evaluation.layers, smoothCurve.layers))
+            for (auto [point, curve] : std::views::zip(pointRow, curveRow))
+                curve.push_back(std::move(point));
+        smoothCurve.result.push_back(std::move(evaluation.result));
+    }
 
     return smoothCurve;
 }
@@ -195,13 +225,20 @@ std::size_t GlobalCurve::getDegree() const {
     return m_controlPoints.size() - 1uz;
 }
 
-ControlPoint GlobalCurve::evaluatePoint(float t, const std::vector<float>& knots) const {
-    std::vector<ControlPoint> layer(m_controlPoints);
+BaseCurve::PyramidEvaluation GlobalCurve::evaluatePoint(float t, const std::vector<float>& knots) const {
+    std::vector<ControlPoint> workingLayer(m_controlPoints);
 
-    while (layer.size() > 1uz)
-        layer = evaluateLayerForStep(layer, t, knots);
+    PyramidEvaluation evaluation;
 
-    return layer.front();
+    while (workingLayer.size() > 1uz) {
+        if (workingLayer.size() < getDegree() && workingLayer.size() > 1uz)
+            evaluation.layers.emplace_back(std::from_range, std::views::transform(workingLayer, [](const ControlPoint& p){ return p.coords; }));
+        workingLayer = evaluateLayerForStep(workingLayer, t, knots);
+    }
+
+    evaluation.result = workingLayer.front();
+
+    return evaluation;
 }
 
 
@@ -241,7 +278,7 @@ SplineCurve::SplineCurve(std::istream& is, std::size_t increment)
     is >> m_degree;
 }
 
-ControlPoint SplineCurve::evaluatePoint(float t, const std::vector<float>& knots) const {
+BaseCurve::PyramidEvaluation SplineCurve::evaluatePoint(float t, const std::vector<float>& knots) const {
     const util::Range indices = getDomainIndices();
     const std::size_t interval = util::findIntervalIndex(t, knots);
     const std::size_t segment = indices.clamp(interval) - indices.lower - 1uz;
@@ -249,10 +286,17 @@ ControlPoint SplineCurve::evaluatePoint(float t, const std::vector<float>& knots
     std::vector<ControlPoint> workingLayer{m_controlPoints.begin() + segment, m_controlPoints.begin() + segment + m_degree + 1uz};
     const auto knotsView = std::views::drop(knots, segment);
 
-    for (const util::Range<std::size_t>& window : getKnotWindows())
-        workingLayer = evaluateLayerForStepWithWindow(workingLayer, t, knotsView, window);
+    PyramidEvaluation evaluation;
 
-    return workingLayer.front();
+    for (const util::Range<std::size_t>& window : getKnotWindows()) {
+        if (workingLayer.size() < m_degree && workingLayer.size() > 1uz)
+            evaluation.layers.emplace_back(std::from_range, std::views::transform(workingLayer, [](const ControlPoint& p){ return p.coords; }));
+        workingLayer = evaluateLayerForStepWithWindow(workingLayer, t, knotsView, window);
+    }
+
+    evaluation.result = workingLayer.front();
+
+    return evaluation;
 }
 
 
