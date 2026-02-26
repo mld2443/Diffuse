@@ -60,6 +60,15 @@ void BaseCurve::draw(bool drawPoints, bool isCurveSelected, const ControlPoint* 
 
     auto sampled = evaluateCurve();
 
+    if (drawPoints && isCurveSelected) {
+        glBegin(GL_LINE_STRIP); {
+            // Ideally would be blended, but I don't want to implement painters' algorithm here
+            glColor3f(0.7f, 0.0f, 0.0f);
+            for (const auto &point : m_controlPoints)
+                glVertex2fv(&point.coords.x);
+        } glEnd();
+    }
+
     glBegin(GL_QUAD_STRIP); {
         auto i2 = sampled.begin(), i1 = i2++;
         while (i2 != sampled.end()) {
@@ -83,14 +92,6 @@ void BaseCurve::draw(bool drawPoints, bool isCurveSelected, const ControlPoint* 
         glVertex2fv(&left.coords.x);
         glColor3fv(&i1->r.x);
         glVertex2fv(&right.coords.x);
-    } glEnd();
-
-    if (isCurveSelected)
-    glBegin(GL_LINE_STRIP); {
-        // Ideally would be blended, but I don't want to implement painters' algorithm
-        glColor3f(0.7f, 0.0f, 0.0f);
-        for (const auto &point : m_controlPoints)
-            glVertex2fv(&point.coords.x);
     } glEnd();
 
     if (drawPoints)

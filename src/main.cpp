@@ -296,6 +296,10 @@ void key(unsigned char c, int x, int y) {
 
         case 27: //escape
             if (::g_colorPickerHandle != 0) {
+                if (::g_selectedCurve) {
+                    ::g_selectedCurve = nullptr;
+                    glutPostWindowRedisplay(::g_diffuseWindow);
+                }
                 closeColorWindow(true);
                 glutSetWindow(::g_diffuseWindow);
             } else {
@@ -418,7 +422,7 @@ int main(int argc, char** argv) {
     glutInitWindowPosition(::WINDOW_OFFX, ::WINDOW_OFFY);
     ::g_diffuseWindow = glutCreateWindow("Diffusion Curves");
     ::init();
-    ::loadFile("../V.txt");
+    ::loadFile("../Z.txt");
     glutReshapeFunc(::reshape);
     glutDisplayFunc(::display);
     glutMouseFunc(::mouse);
