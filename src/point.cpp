@@ -69,18 +69,18 @@ void ControlPoint::draw(bool isHighlighted, bool inColoringWindow) const {
     } glEnd();
 }
 
-ControlPoint ControlPoint::leftside(const ControlPoint& c) const {
+f32v2 ControlPoint::leftside(const ControlPoint& c) const {
     auto tangent = (c.coords - coords).normalized();
-    ControlPoint rvalue({ -tangent.y, tangent.x });
+    f32v2 rvalue({ -tangent.y, tangent.x });
 
-    return *this + rvalue * LINEWIDTH;
+    return coords + rvalue * LINEWIDTH;
 }
 
-ControlPoint ControlPoint::rightside(const ControlPoint& c) const {
+f32v2 ControlPoint::rightside(const ControlPoint& c) const {
     auto tangent = (c.coords - coords).normalized();
-    ControlPoint rvalue({ tangent.y, -tangent.x });
+    f32v2 rvalue({ tangent.y, -tangent.x });
 
-    return *this + rvalue * LINEWIDTH;
+    return coords + rvalue * LINEWIDTH;
 }
 
 bool ControlPoint::clicked(const f32v2& clickPos) const {

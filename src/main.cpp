@@ -18,12 +18,15 @@
 
 
 namespace {
-    constexpr std::size_t WINDOW_SIZE = 512uz;
+    constexpr std::size_t WINDOW_SIZE = 1024uz;
     constexpr std::size_t WINDOW_OFFX = 100uz;
     constexpr std::size_t WINDOW_OFFY = 100uz;
 
     std::size_t g_blurIterations = 20uz, g_pyramidDepth = std::log2(WINDOW_SIZE);
     bool g_drawSubCurves = false;
+    std::optional<std::size_t> g_selectedLayer = std::nullopt;
+    std::optional<std::size_t> g_selectedSubCurve = std::nullopt;
+    bool g_drawTangents = false;
     bool g_diffusing = false;
     Image<GLfloat>::EdgePolicy g_diffusePolicy = Image<GLfloat>::EdgePolicy::TRANSPARENT;
 
@@ -45,7 +48,7 @@ void display() {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
     for (const auto &curve : ::g_curves)
-        curve->draw(!::g_diffusing, curve.get() == ::g_selectedCurve, ::g_drawSubCurves, ::g_hoveredPoint);
+        curve->draw(!::g_diffusing, curve.get() == ::g_selectedCurve, ::g_drawSubCurves, ::g_drawTangents, ::g_selectedLayer, ::g_selectedSubCurve, ::g_hoveredPoint);
 
     if (::g_diffusing) {
         glFlush();
@@ -222,7 +225,6 @@ void key(unsigned char c, int x, int y) {
                     glutPostWindowRedisplay(::g_diffuseWindow);
             }
             return;
-
         case '=':
                 ++::g_blurIterations;
                 std::println("BlurIterations: {}, Depth: {}", ::g_blurIterations, ::g_pyramidDepth);
@@ -238,7 +240,6 @@ void key(unsigned char c, int x, int y) {
                     glutPostWindowRedisplay(::g_diffuseWindow);
             }
             return;
-
         case '+':
             if (::WINDOW_SIZE >> ::g_pyramidDepth > 1uz) {
                 ++::g_pyramidDepth;
@@ -256,7 +257,6 @@ void key(unsigned char c, int x, int y) {
                 ::saveFile(filename);
             }
             return;
-
         case 'l':
             if (!::g_diffusing) {
                 std::string filename;
@@ -266,6 +266,67 @@ void key(unsigned char c, int x, int y) {
             }
             return;
 
+        case 't':
+            if (!::g_diffusing) {
+                ::g_drawTangents = !::g_drawTangents;
+                glutPostWindowRedisplay(::g_diffuseWindow);
+            }
+            return;
+
+        case '[':
+            if (::g_selectedCurve) {
+                if (!::g_selectedSubCurve) {
+                    ::g_selectedSubCurve = ::g_selectedCurve->getDegree() - 1uz;
+                } else if (*::g_selectedSubCurve > 0uz) {
+                    --*::g_selectedSubCurve;
+                } else {
+                    ::g_selectedSubCurve = std::nullopt;
+                }
+                if (!::g_diffusing)
+                    glutPostWindowRedisplay(::g_diffuseWindow);
+            }
+            return;
+        case ']':
+            if (::g_selectedCurve) {
+                if (!::g_selectedSubCurve) {
+                    ::g_selectedSubCurve = 0uz;
+                } else if (*::g_selectedSubCurve < ::g_selectedCurve->getDegree() - 1uz) {
+                    ++*::g_selectedSubCurve;
+                } else {
+                    ::g_selectedSubCurve = std::nullopt;
+                }
+                if (!::g_diffusing)
+                    glutPostWindowRedisplay(::g_diffuseWindow);
+            }
+            return;
+
+        // case '{':
+        //     if (::g_selectedCurve) {
+        //         if (!::g_selectedLayer) {
+        //             ::g_selectedLayer = ::g_selectedCurve->getDegree() - 1uz;
+        //         } else if (*::g_selectedLayer > 0uz) {
+        //             --*::g_selectedLayer;
+        //         } else {
+        //             ::g_selectedLayer = std::nullopt;
+        //         }
+        //         if (!::g_diffusing)
+        //             glutPostWindowRedisplay(::g_diffuseWindow);
+        //     }
+        //     return;
+        // case '}':
+        //     if (::g_selectedCurve) {
+        //         if (!::g_selectedSubCurve) {
+        //             ::g_selectedSubCurve = 0uz;
+        //         } else if (*::g_selectedSubCurve < ::g_selectedCurve->getDegree() - 1uz) {
+        //             ++*::g_selectedSubCurve;
+        //         } else {
+        //             ::g_selectedSubCurve = std::nullopt;
+        //         }
+        //         if (!::g_diffusing)
+        //             glutPostWindowRedisplay(::g_diffuseWindow);
+        //     }
+        //     return;
+
         case '1':
             if (!::g_diffusing && ::g_points.size() > 1uz) {
                 ::closeColorWindow(::g_hoveredPoint);
@@ -274,7 +335,6 @@ void key(unsigned char c, int x, int y) {
                 glutPostWindowRedisplay(::g_diffuseWindow);
             }
             return;
-
         case '2':
             if (!::g_diffusing && ::g_points.size() > 1uz) {
                 ::closeColorWindow(::g_hoveredPoint);
@@ -283,7 +343,6 @@ void key(unsigned char c, int x, int y) {
                 glutPostWindowRedisplay(::g_diffuseWindow);
             }
             return;
-
         case '3':
             if (!::g_diffusing && ::g_points.size() > 1uz) {
                 ::closeColorWindow(::g_hoveredPoint);
@@ -292,7 +351,6 @@ void key(unsigned char c, int x, int y) {
                 glutPostWindowRedisplay(::g_diffuseWindow);
             }
             return;
-
         case '4':
             if (!::g_diffusing && ::g_points.size() > 1uz) {
                 ::closeColorWindow(::g_hoveredPoint);
@@ -337,79 +395,84 @@ void mouse(int button, int state, int x, int y) {
         return;
 
     switch(button) {
-        case GLUT_LEFT_BUTTON:
-            ::g_mouseLeftDown = state == GLUT_DOWN;
-            ::g_moving = nullptr;
+    case GLUT_LEFT_BUTTON:
+        ::g_mouseLeftDown = state == GLUT_DOWN;
+        ::g_moving = nullptr;
 
-            if (::g_mouseLeftDown) {
-                // Check if selecting unaffiliated point on canvas
-                for (auto &point : ::g_points)
-                    if (point.clicked(g_lastCursorPos))
-                        ::g_moving = &point;
+        if (::g_mouseLeftDown) {
+            // Check if selecting unaffiliated point on canvas
+            for (auto &point : ::g_points)
+                if (point.clicked(g_lastCursorPos))
+                    ::g_moving = &point;
 
-                // Check if selecting point on an existing curve
-                if (!::g_moving)
-                    for (auto& curve : ::g_curves)
-                        for (auto &point : curve->getControlPoints())
-                            if (point.clicked(g_lastCursorPos))
-                                ::g_moving = &point;
+            // Check if selecting point on an existing curve
+            if (!::g_moving)
+                for (auto& curve : ::g_curves)
+                    for (auto &point : curve->getControlPoints())
+                        if (point.clicked(g_lastCursorPos))
+                            ::g_moving = &point;
 
-                // Add new point to canvas
-                if (!::g_moving) {
-                    ::g_points.push_back(ControlPoint{g_lastCursorPos});
-                    ::g_moving = &::g_points.back();
-                }
+            if (::g_moving)
+                glutPostRedisplay();
+
+            // Add new point to canvas
+            if (!::g_moving && !::g_selectedCurve) {
+                ::g_points.push_back(ControlPoint{g_lastCursorPos});
+                ::g_moving = &::g_points.back();
+                glutPostRedisplay();
             }
-            glutPostRedisplay();
-            break;
+        }
+        return;
 
-        case GLUT_RIGHT_BUTTON:
-            ::g_mouseRightDown = state == GLUT_DOWN;
+    case GLUT_RIGHT_BUTTON:
+        ::g_mouseRightDown = state == GLUT_DOWN;
 
-            if (::g_mouseRightDown) {
-                ::g_selectedCurve = nullptr;
+        if (::g_mouseRightDown) {
+            ::g_selectedCurve = nullptr;
+            ::g_selectedLayer = std::nullopt;
+            ::g_selectedSubCurve = std::nullopt;
+            if (::g_colorPickerHandle) {
+                glutDestroyWindow(::g_colorPickerHandle);
+                ::g_colorPickerHandle = 0;
+            }
+
+            for (auto& curve : ::g_curves)
+                for (auto &point : curve->getControlPoints())
+                    if (point.clicked(::g_lastCursorPos)) {
+                        ::g_hoveredPoint = &point;
+                        ::g_selectedCurve = curve.get();
+                    }
+
+            if (::g_selectedCurve) {
                 if (::g_colorPickerHandle) {
                     glutDestroyWindow(::g_colorPickerHandle);
                     ::g_colorPickerHandle = 0;
                 }
 
-                for (auto& curve : ::g_curves)
-                    for (auto &point : curve->getControlPoints())
-                        if (point.clicked(::g_lastCursorPos)) {
-                            ::g_hoveredPoint = &point;
-                            ::g_selectedCurve = curve.get();
-                        }
+                const char* title = nullptr;
+                if (dynamic_cast<BezierCurve*>(::g_selectedCurve))
+                    title = "Bezier Curve";
+                else if (dynamic_cast<LagrangeCurve*>(::g_selectedCurve))
+                    title = "Lagrange Curve";
+                else if (dynamic_cast<BSplineCurve*>(::g_selectedCurve))
+                    title = "B-Spline Curve";
+                else if (dynamic_cast<CatmullRomCurve*>(::g_selectedCurve))
+                    title = "Catmull-Rom Curve";
 
-                if (::g_selectedCurve) {
-                    if (::g_colorPickerHandle) {
-                        glutDestroyWindow(::g_colorPickerHandle);
-                        ::g_colorPickerHandle = 0;
-                    }
-
-                    const char* title = nullptr;
-                    if (dynamic_cast<BezierCurve*>(::g_selectedCurve))
-                        title = "Bezier Curve";
-                    else if (dynamic_cast<LagrangeCurve*>(::g_selectedCurve))
-                        title = "Lagrange Curve";
-                    else if (dynamic_cast<BSplineCurve*>(::g_selectedCurve))
-                        title = "B-Spline Curve";
-                    else if (dynamic_cast<CatmullRomCurve*>(::g_selectedCurve))
-                        title = "Catmull-Rom Curve";
-
-                    glutInitWindowSize(321, 5uz + ColorPicker::BCOLOR_BUFFER + 85uz * ::g_selectedCurve->getControlPoints().size());
-                    glutInitWindowPosition(glutGet(GLUT_WINDOW_X) + glutGet(GLUT_WINDOW_WIDTH) + 10, glutGet(GLUT_WINDOW_Y));
-                    ::g_colorPickerHandle = glutCreateWindow(title);
-                    glutDisplayFunc(ColorPicker::display);
-                    glutMouseFunc(ColorPicker::mouse);
-                    glutMotionFunc(ColorPicker::motion);
-                    glutKeyboardFunc(::key);
-                    glutReshapeFunc(ColorPicker::reshape);
-                    glClearColor(0.2, 0.2, 0.2, 0.0);
-                }
-
-                glutPostWindowRedisplay(::g_diffuseWindow);
+                glutInitWindowSize(321, 5uz + ColorPicker::BCOLOR_BUFFER + 85uz * ::g_selectedCurve->getControlPoints().size());
+                glutInitWindowPosition(glutGet(GLUT_WINDOW_X) + glutGet(GLUT_WINDOW_WIDTH) + 10, glutGet(GLUT_WINDOW_Y));
+                ::g_colorPickerHandle = glutCreateWindow(title);
+                glutDisplayFunc(ColorPicker::display);
+                glutMouseFunc(ColorPicker::mouse);
+                glutMotionFunc(ColorPicker::motion);
+                glutKeyboardFunc(::key);
+                glutReshapeFunc(ColorPicker::reshape);
+                glClearColor(0.2, 0.2, 0.2, 0.0);
             }
-            break;
+
+            glutPostWindowRedisplay(::g_diffuseWindow);
+        }
+        return;
     }
 }
 
@@ -430,7 +493,7 @@ int main(int argc, char** argv) {
     glutInitWindowPosition(::WINDOW_OFFX, ::WINDOW_OFFY);
     ::g_diffuseWindow = glutCreateWindow("Diffusion Curves");
     ::init();
-    ::loadFile("../Z.txt");
+    ::loadFile("../V.txt");
     glutReshapeFunc(::reshape);
     glutDisplayFunc(::display);
     glutMouseFunc(::mouse);

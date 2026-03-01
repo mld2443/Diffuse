@@ -136,8 +136,8 @@ struct ControlPoint {
 
     void draw(bool onSelectedCurve, bool selectedPoint) const;
 
-    ControlPoint leftside(const ControlPoint& o) const;
-    ControlPoint rightside(const ControlPoint& o) const;
+    f32v2 leftside(const ControlPoint& o) const;
+    f32v2 rightside(const ControlPoint& o) const;
 
     bool clicked(const f32v2& clickPos) const;
 };

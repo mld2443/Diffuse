@@ -5,7 +5,7 @@
 
 
 namespace ColorPicker {
-    static constexpr std::size_t BCOLOR_BUFFER = 30u;
+    static constexpr std::size_t BCOLOR_BUFFER = 70u;
 
     template <typename... Args>
     void text(int x, int y, void* font, const std::format_string<Args...>& fmt, Args&&... args);

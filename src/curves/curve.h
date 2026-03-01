@@ -3,8 +3,9 @@
 #include "../point.h"
 #include "../util/common.h"
 
-#include <vector>
+#include <optional>
 #include <span>
+#include <vector>
 
 
 /////////////////////
@@ -27,26 +28,34 @@ public:
 
     void setFidelity(std::size_t fidelity);
 
-    void draw(bool drawPoints, bool selected, bool drawSubCurves, const ControlPoint* sp) const;
+    void draw(bool drawPoints, bool selected, bool drawSubCurves, bool drawTangents, const std::optional<std::size_t>& selectedLayer, const std::optional<std::size_t>& selectedCurve, const ControlPoint* sp) const;
+
+    // void drawControlPolygon() const;
+    // void drawPoints(const ControlPoint* sp) const;
+    // void drawTangents() const;
+    // void drawCurve() const;
+    // void drawSubCurve(const std::optional<std::size_t>& selectedLayer, const std::optional<std::size_t>& selectedCurve) const;
+
+    // provided by parameterization
+    virtual util::Range<std::size_t> getDomainIndices() const =0;
+    virtual std::vector<float> generateKnots() const =0;
 
 protected:
     struct PyramidEvaluation {
-        ControlPoint result;
         std::vector<std::vector<f32v2>> layers;
+        ControlPoint result;
+        f32v2 tangent;
     };
 
     struct CurveEvaluation {
-        std::vector<ControlPoint> result;
         std::vector<std::vector<std::vector<f32v2>>> layers;
+        std::vector<ControlPoint> results;
+        std::vector<f32v2> tangents;
     };
 
     BaseCurve(std::vector<ControlPoint>&& controlPoints);
 
     static std::vector<ControlPoint> evaluateLayerForStepWithWindow(const std::span<const ControlPoint>& lowerDegree, float t, const std::span<const float>& knots, const util::Range<std::size_t>& window);
-
-    // provided by parameterization
-    virtual util::Range<std::size_t> getDomainIndices() const =0;
-    virtual std::vector<float> generateKnots() const =0;
 
     // provided by locality type
     virtual PyramidEvaluation evaluatePoint(float t, const std::vector<float>& knots) const =0;
@@ -115,13 +124,13 @@ public:
     void incDegree();
     void decDegree();
 
+    using KnotWindows = std::vector<util::Range<std::size_t>>;
+
+    virtual KnotWindows getKnotWindows() const =0;
 protected:
     SplineCurve(std::size_t degree, std::size_t increment);
     SplineCurve(std::istream& is, std::size_t increment);
 
-    using KnotWindows = std::vector<util::Range<std::size_t>>;
-
-    virtual KnotWindows getKnotWindows() const =0;
     virtual PyramidEvaluation evaluatePoint(float t, const std::vector<float>& knots) const final override;
 
 private:

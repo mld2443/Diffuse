@@ -94,6 +94,17 @@ void ColorPicker::display() {
         } glEnd();
     }
 
+    {
+        const auto knots = ::g_selectedCurve->generateKnots();
+        const auto indices = ::g_selectedCurve->getDomainIndices();
+        text(10, 38, GLUT_BITMAP_HELVETICA_18, "<{:n}>", knots);
+        // if (SplineCurve* spline = dynamic_cast<SplineCurve*>(::g_selectedCurve)) {
+        //     text(10, 58, GLUT_BITMAP_HELVETICA_10, "{} -> [{}, {}); {}", indices, knots[indices.lower], knots[indices.upper], spline->getKnotWindows());
+        // } else {
+        //     text(10, 58, GLUT_BITMAP_HELVETICA_10, "{} -> [{}, {})", indices, knots[indices.lower], knots[indices.upper]);
+        // }
+    }
+
     glPushMatrix(); {
         glTranslated(0, BCOLOR_BUFFER, 0);
         for (const auto &p : ::g_selectedCurve->getControlPoints()) {

@@ -54,37 +54,43 @@ void BaseCurve::setFidelity(std::size_t f) {
     m_fidelity = f;
 }
 
-void BaseCurve::draw(bool drawPoints, bool isCurveSelected, bool drawSubCurves, const ControlPoint* selectedPoint) const {
+void BaseCurve::draw(bool drawPoints, bool isCurveSelected, bool drawSubCurves, bool drawTangents, const std::optional<std::size_t>& selectedLayer, const std::optional<std::size_t>& selectedCurve, const ControlPoint* selectedPoint) const {
+    static const float hues[][3] = {
+        {0.6f, 0.3f, 0.0f},
+        {0.6f, 0.6f, 0.0f},
+        {0.3f, 0.6f, 0.0f},
+        {0.0f, 0.6f, 0.0f},
+        {0.0f, 0.6f, 0.3f},
+        {0.0f, 0.6f, 0.6f},
+        {0.0f, 0.3f, 0.6f},
+        {0.0f, 0.0f, 0.6f},
+        {0.3f, 0.0f, 0.6f},
+        {0.6f, 0.0f, 0.6f},
+        {0.6f, 0.0f, 0.3f},
+        {0.6f, 0.0f, 0.0f},
+    };
+
     if (m_controlPoints.size() < 2uz)
         return;
 
-    auto sampled = evaluateCurve();
+    CurveEvaluation sampled{evaluateCurve()};
 
     if (isCurveSelected && drawPoints && getDegree() > 1uz) {
         glBegin(GL_LINE_STRIP); {
             // Ideally would be blended, but I don't want to implement painters' algorithm here
-            glColor3f(0.6f, 0.0f, 0.0f);
+            glColor3fv(hues[util::arrlen(hues) - 1uz]);
             for (const auto &point : m_controlPoints)
                 glVertex2fv(&point.coords.x);
         } glEnd();
 
         if (drawSubCurves) {
-            static const float colors[][3] = {
-                {0.6f, 0.6f, 0.0f},
-                {0.0f, 0.6f, 0.0f},
-                {0.0f, 0.6f, 0.6f},
-                {0.0f, 0.0f, 0.6f},
-                {0.6f, 0.0f, 0.6f},
-                {0.6f, 0.0f, 0.0f},
-            };
-
-            for (const auto [index, layer] : std::views::enumerate(sampled.layers)) {
-                glColor3fv(colors[index % 6uz]);
-                for (const auto& subCurve : layer) {
+            for (const auto [rowIndex, layer] : std::views::enumerate(sampled.layers)) {
+                for (const auto [segmentIndex, subCurve] : std::views::enumerate(layer)) {
+                    glColor3fv(hues[(rowIndex) % util::arrlen(hues)]);
                     glBegin(GL_LINE_STRIP); {
                         // Ideally would be blended, but I don't want to implement painters' algorithm here
                         for (const f32v2& point : subCurve) {
-                                glVertex2fv(&point.x);
+                            glVertex2fv(&point.x);
                         }
                     } glEnd();
                 }
@@ -92,30 +98,34 @@ void BaseCurve::draw(bool drawPoints, bool isCurveSelected, bool drawSubCurves, 
         }
     }
 
-    glBegin(GL_QUAD_STRIP); {
-        auto i2 = sampled.result.begin(), i1 = i2++;
-        while (i2 != sampled.result.end()) {
-            auto left = i1->leftside(*i2);
-            auto right = i1->rightside(*i2);
+    glBegin(GL_LINE_STRIP); {
+        glColor3f(1.0f, 1.0f, 1.0f);
+        for (const auto [point, tangent] : std::views::zip(sampled.results, sampled.tangents)) {
+            // constexpr float LINEWIDTH = 6.0f;
 
-            glColor3fv(&i1->l.x);
-            glVertex2fv(&left.coords.x);
-            glColor3fv(&i1->r.x);
-            glVertex2fv(&right.coords.x);
+            // const f32v2 leftDir{-tangent.y, tangent.x};
+            // const f32v2 rightDir{tangent.y, -tangent.x};
+            // const f32v2 leftPoint = point.coords + leftDir * 0.5f * LINEWIDTH;
+            // const f32v2 rightPoint = point.coords + rightDir * 0.5f * LINEWIDTH;
 
-            ++i1;
-            ++i2;
+            glVertex2fv(&point.coords.x);
+            // glColor3fv(&point.l.x);
+            // glVertex2fv(&leftPoint.x);
+            // glColor3fv(&point.r.x);
+            // glVertex2fv(&rightPoint.x);
         }
-
-        // Draw last point with special care for tangent.
-        auto right = i1->leftside(*(i1 - 1uz));
-        auto left = i1->rightside(*(i1 - 1uz));
-
-        glColor3fv(&i1->l.x);
-        glVertex2fv(&left.coords.x);
-        glColor3fv(&i1->r.x);
-        glVertex2fv(&right.coords.x);
     } glEnd();
+
+    if (getDegree() > 1uz && drawTangents) {
+        glBegin(GL_LINES); {
+            glColor3f(0.3f, 0.3f, 0.0f);
+            for (const auto [point, tangent] : std::views::zip(sampled.results, sampled.tangents)) {
+                const f32v2 vec = point.coords + tangent;
+                glVertex2fv(&point.coords.x);
+                glVertex2fv(&vec.x);
+            }
+        } glEnd();
+    }
 
     if (drawPoints)
         for (const auto &point : m_controlPoints)
@@ -150,14 +160,16 @@ BaseCurve::CurveEvaluation BaseCurve::evaluateCurve() const {
                 subcurve.reserve(m_fidelity + 1uz);
         }
     }
-    smoothCurve.result.reserve(m_fidelity + 1uz);
+    smoothCurve.results.reserve(m_fidelity + 1uz);
+    smoothCurve.tangents.reserve(m_fidelity + 1uz);
 
     for (std::size_t t = steps.lower; t <= steps.upper; ++t) {
         PyramidEvaluation evaluation{evaluatePoint(domain.lerp(steps.unmix(t)), knots)};
         for (auto [pointRow, curveRow] : std::views::zip(evaluation.layers, smoothCurve.layers))
             for (auto [point, curve] : std::views::zip(pointRow, curveRow))
                 curve.push_back(std::move(point));
-        smoothCurve.result.push_back(std::move(evaluation.result));
+        smoothCurve.results.push_back(std::move(evaluation.result));
+        smoothCurve.tangents.push_back(std::move(evaluation.tangent));
     }
 
     return smoothCurve;
@@ -235,6 +247,8 @@ BaseCurve::PyramidEvaluation GlobalCurve::evaluatePoint(float t, const std::vect
     while (workingLayer.size() > 1uz) {
         if (workingLayer.size() < getDegree() && workingLayer.size() > 1uz)
             evaluation.layers.emplace_back(std::from_range, std::views::transform(workingLayer, [](const ControlPoint& p){ return p.coords; }));
+        if (workingLayer.size() == 2uz)
+            evaluation.tangent = (workingLayer[1uz].coords - workingLayer[0uz].coords);
         workingLayer = evaluateLayerForStep(workingLayer, t, knots);
     }
 
@@ -293,6 +307,8 @@ BaseCurve::PyramidEvaluation SplineCurve::evaluatePoint(float t, const std::vect
     for (const util::Range<std::size_t>& window : getKnotWindows()) {
         if (workingLayer.size() < m_degree && workingLayer.size() > 1uz)
             evaluation.layers.emplace_back(std::from_range, std::views::transform(workingLayer, [](const ControlPoint& p){ return p.coords; }));
+        if (workingLayer.size() == 2uz)
+            evaluation.tangent = (workingLayer[1uz].coords - workingLayer[0uz].coords) / (knotsView[window.upper] - knotsView[window.lower]);
         workingLayer = evaluateLayerForStepWithWindow(workingLayer, t, knotsView, window);
     }
 
