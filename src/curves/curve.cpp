@@ -54,7 +54,7 @@ void BaseCurve::setFidelity(std::size_t f) {
     m_fidelity = f;
 }
 
-void BaseCurve::draw(bool drawPoints, bool isCurveSelected, bool drawSubCurves, bool drawTangents, const std::optional<std::size_t>& selectedLayer, const std::optional<std::size_t>& selectedCurve, const ControlPoint* selectedPoint) const {
+void BaseCurve::draw(bool editMode, bool isCurveSelected, bool drawSubCurves, bool drawTangents, const std::optional<std::size_t>& selectedLayer, const std::optional<std::size_t>& selectedCurve, const ControlPoint* selectedPoint) const {
     static const float hues[][3] = {
         {0.6f, 0.3f, 0.0f},
         {0.6f, 0.6f, 0.0f},
@@ -75,7 +75,7 @@ void BaseCurve::draw(bool drawPoints, bool isCurveSelected, bool drawSubCurves, 
 
     CurveEvaluation sampled{evaluateCurve()};
 
-    if (isCurveSelected && drawPoints && getDegree() > 1uz) {
+    if (editMode && isCurveSelected && getDegree() > 1uz) {
         glBegin(GL_LINE_STRIP); {
             // Ideally would be blended, but I don't want to implement painters' algorithm here
             glColor3fv(hues[util::arrlen(hues) - 1uz]);
@@ -98,23 +98,29 @@ void BaseCurve::draw(bool drawPoints, bool isCurveSelected, bool drawSubCurves, 
         }
     }
 
-    glBegin(GL_LINE_STRIP); {
+    if (editMode && isCurveSelected && (drawSubCurves || drawTangents)) {
         glColor3f(1.0f, 1.0f, 1.0f);
-        for (const auto [point, tangent] : std::views::zip(sampled.results, sampled.tangents)) {
-            // constexpr float LINEWIDTH = 6.0f;
+        glBegin(GL_LINE_STRIP); {
+            for (const auto [point, tangent] : std::views::zip(sampled.results, sampled.tangents))
+                glVertex2fv(&point.coords.x);
+        } glEnd();
+    } else {
+        glBegin(GL_QUAD_STRIP); {
+            for (const auto [point, tangent] : std::views::zip(sampled.results, sampled.tangents)) {
+                constexpr float LINEWIDTH = 6.0f;
 
-            // const f32v2 leftDir{-tangent.y, tangent.x};
-            // const f32v2 rightDir{tangent.y, -tangent.x};
-            // const f32v2 leftPoint = point.coords + leftDir * 0.5f * LINEWIDTH;
-            // const f32v2 rightPoint = point.coords + rightDir * 0.5f * LINEWIDTH;
+                const f32v2 leftDir{-tangent.y, tangent.x};
+                const f32v2 rightDir{tangent.y, -tangent.x};
+                const f32v2 leftPoint = point.coords + leftDir.normalized() * 0.5f * LINEWIDTH;
+                const f32v2 rightPoint = point.coords + rightDir.normalized() * 0.5f * LINEWIDTH;
 
-            glVertex2fv(&point.coords.x);
-            // glColor3fv(&point.l.x);
-            // glVertex2fv(&leftPoint.x);
-            // glColor3fv(&point.r.x);
-            // glVertex2fv(&rightPoint.x);
-        }
-    } glEnd();
+                glColor3fv(&point.l.x);
+                glVertex2fv(&leftPoint.x);
+                glColor3fv(&point.r.x);
+                glVertex2fv(&rightPoint.x);
+            }
+        } glEnd();
+    }
 
     if (getDegree() > 1uz && drawTangents) {
         glBegin(GL_LINES); {
@@ -127,7 +133,7 @@ void BaseCurve::draw(bool drawPoints, bool isCurveSelected, bool drawSubCurves, 
         } glEnd();
     }
 
-    if (drawPoints)
+    if (editMode)
         for (const auto &point : m_controlPoints)
             point.draw(isCurveSelected, isCurveSelected && &point == selectedPoint);
 }
